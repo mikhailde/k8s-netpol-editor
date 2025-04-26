@@ -11,8 +11,6 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   useReactFlow,
-  NodeProps,
-  XYPosition
 } from 'reactflow';
 
 import 'reactflow/dist/style.css';

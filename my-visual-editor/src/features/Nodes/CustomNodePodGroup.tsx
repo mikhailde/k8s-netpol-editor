@@ -1,10 +1,7 @@
 import React from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, NodeProps } from 'reactflow';
 
-interface CustomNodePodGroupProps {
-}
-
-const CustomNodePodGroup: React.FC<CustomNodePodGroupProps> = () => {
+const CustomNodePodGroup: React.FC<NodeProps> = () => {
   return (
     <div style={{
       padding: '10px',
