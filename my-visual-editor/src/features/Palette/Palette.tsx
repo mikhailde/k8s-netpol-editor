@@ -14,6 +14,9 @@ const Palette = () => {
       <div className="dndnode" onDragStart={(event) => onDragStart(event, 'namespace')} draggable>
         Неймспейс
       </div>
+      <div className="dndnode" onDragStart={(event) => onDragStart(event, 'podGroup')} draggable>
+        Группа Подов
+      </div>
     </aside>
   );
 };
