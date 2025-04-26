@@ -1,20 +1,23 @@
 import React from 'react';
-import CanvasWrapper from '../features/Canvas/Canvas';
-import Palette from '../features/Palette/Palette';
-import InspectorView from '../features/Inspector/InspectorView';
+import Canvas from '../components/Canvas/Canvas';
 import './Layout.css';
 
 const Layout: React.FC = () => {
   return (
     <div className="layout-container">
-      <Palette />
-
-      <div className="canvas-container">
-        <CanvasWrapper />
+      <div className="layout-palette">
+        <h2>Palette</h2>
       </div>
-
-      <div className="inspector-container">
-        <InspectorView />
+      <div className="layout-main-area">
+        <div className="layout-canvas">
+          <Canvas />
+        </div>
+        <div className="layout-inspector">
+          <h2>Inspector</h2>
+        </div>
+      </div>
+      <div className="layout-output">
+        <h2>Output</h2>
       </div>
     </div>
   );
