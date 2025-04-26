@@ -1,49 +1,46 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import ReactFlow, {
   Node,
+  Edge,
+  addEdge,
+  Connection,
+  useNodesState,
+  useEdgesState,
   Controls,
   MiniMap,
   Background,
   BackgroundVariant,
   useReactFlow,
-  ReactFlowProvider,
+  NodeProps,
+  XYPosition
 } from 'reactflow';
+
 import 'reactflow/dist/style.css';
 
-import { useAppStore } from '../../store/store';
 import CustomNodeNamespace from '../Nodes/CustomNodeNamespace';
 import CustomNodePodGroup from '../Nodes/CustomNodePodGroup';
-import CustomRuleEdge from '../Edges/CustomRuleEdge';
 
 const nodeTypes = {
   namespace: CustomNodeNamespace,
   podGroup: CustomNodePodGroup,
 };
 
-const edgeTypes = {
-  customRuleEdge: CustomRuleEdge,
-};
+let id = 0;
+const getId = () => `dndnode_${id++}`;
 
-let idCounter = 0;
-const getId = () => `dndnode_${idCounter++}`;
+const initialNodes: Node[] = [];
+const initialEdges: Edge[] = [];
 
 const Canvas: React.FC = () => {
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition, getNode } = useReactFlow();
+  const { project, getIntersectingNodes } = useReactFlow();
 
-  const nodes = useAppStore((state) => state.nodes);
-  const edges = useAppStore((state) => state.edges);
-  const onNodesChange = useAppStore((state) => state.onNodesChange);
-  const onEdgesChange = useAppStore((state) => state.onEdgesChange);
-  const onConnect = useAppStore((state) => state.onConnect);
-  const addNode = useAppStore((state) => state.addNode);
-  const deleteElements = useAppStore((state) => state.deleteElements);
-  const selectedElementId = useAppStore((state) => state.selectedElementId);
-  const setSelectedElementId = useAppStore((state) => state.setSelectedElementId);
-
-  const handlePaneClick = useCallback(() => {
-    setSelectedElementId(null);
-  }, [setSelectedElementId]);
+  const onConnect = useCallback(
+    (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges],
+  );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -55,87 +52,69 @@ const Canvas: React.FC = () => {
       event.preventDefault();
 
       const type = event.dataTransfer.getData('application/reactflow');
+
       if (typeof type === 'undefined' || !type) {
         return;
       }
-      const wrapper = reactFlowWrapper.current;
-      if (!wrapper) {
-        return;
+
+      const reactFlowWrapperCurrent = reactFlowWrapper.current;
+      if (!reactFlowWrapperCurrent) {
+          return;
       }
-      const position = screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
+
+      const reactFlowBounds = reactFlowWrapperCurrent.getBoundingClientRect();
+      // 1. Рассчитываем АБСОЛЮТНУЮ позицию на холсте
+      const absolutePosition = project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
       });
 
       let parentNode: Node | undefined = undefined;
+      let position = { ...absolutePosition };
       let parentNodeId: string | undefined = undefined;
       let extent: 'parent' | undefined = undefined;
-      let nodePosition = { ...position };
 
-      const potentialParent = nodes
-        .slice()
-        .reverse()
-        .find((n: Node) =>
-          n.type === 'namespace' &&
-          n.positionAbsolute &&
-          n.width && n.height &&
-          position.x >= n.positionAbsolute.x &&
-          position.x <= n.positionAbsolute.x + n.width &&
-          position.y >= n.positionAbsolute.y &&
-          position.y <= n.positionAbsolute.y + n.height
-        );
+      // 2. Ищем пересекающий неймспейс в точке броска
+      const intersectingNodes = getIntersectingNodes({
+        x: absolutePosition.x,
+        y: absolutePosition.y,
+        width: 1,
+        height: 1,
+      }).filter((n) => n.type === 'namespace');
 
-      if (potentialParent && type === 'podGroup') {
-        parentNode = potentialParent;
+      // 3. Если нашли неймспейс и бросаем Pod Group
+      if (intersectingNodes.length > 0 && type === 'podGroup') {
+        parentNode = intersectingNodes[0];
         parentNodeId = parentNode.id;
-        extent = 'parent';
 
-        nodePosition = {
-          x: position.x - parentNode.positionAbsolute!.x,
-          y: position.y - parentNode.positionAbsolute!.y,
-        };
+        // 4. ВЫЧИСЛЯЕМ ОТНОСИТЕЛЬНУЮ ПОЗИЦИЮ
+        if (parentNode.positionAbsolute) {
+          position = {
+            x: absolutePosition.x - parentNode.positionAbsolute.x,
+            y: absolutePosition.y - parentNode.positionAbsolute.y,
+          };
+        } else {
+          console.warn("Parent node's absolute position is not available for relative calculation.");
+        }
+
+        // 5. Устанавливаем ограничение перемещения границами родителя
+        extent = 'parent';
       }
 
+      // 6. Создаем новый узел с правильной позицией и родителем
       const newNode: Node = {
         id: getId(),
         type,
-        position: nodePosition,
+        position,
         data: { label: `${type} node` },
         parentNode: parentNodeId,
         extent: extent,
       };
 
-      addNode(newNode);
+      setNodes((nds) => nds.concat(newNode));
     },
-    [screenToFlowPosition, addNode, nodes]
+    [project, setNodes, getIntersectingNodes],
   );
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Delete' || event.key === 'Backspace') {
-        if (selectedElementId) {
-          const selectedNode = getNode(selectedElementId);
-          if (!selectedNode) return;
-
-          let nodesToRemove: Node[] = [];
-
-          if (selectedNode.type === 'namespace') {
-            const childNodes = nodes.filter((node: Node) => node.parentNode === selectedElementId);
-            nodesToRemove = [selectedNode, ...childNodes];
-          } else {
-            nodesToRemove = [selectedNode];
-          }
-
-          if (nodesToRemove.length > 0) {
-            deleteElements({ nodes: nodesToRemove });
-          }
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElementId, deleteElements, getNode, nodes]);
 
   return (
     <div className="reactflow-wrapper" ref={reactFlowWrapper} style={{ width: '100%', height: '100%' }}>
@@ -148,12 +127,9 @@ const Canvas: React.FC = () => {
         onDragOver={onDragOver}
         onDrop={onDrop}
         nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onPaneClick={handlePaneClick}
         fitView
         nodesDraggable={true}
-        nodesConnectable={true}
-      >
+        nodesConnectable={true}>
         <Controls />
         <MiniMap nodeStrokeWidth={3} />
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
@@ -162,10 +138,4 @@ const Canvas: React.FC = () => {
   );
 };
 
-const CanvasWrapper: React.FC = () => (
-  <ReactFlowProvider>
-    <Canvas />
-  </ReactFlowProvider>
-);
-
-export default CanvasWrapper;
+export default Canvas;
