@@ -8,7 +8,6 @@ const CustomNodePodGroup: React.FC<NodeProps> = ({ id, data }) => {
 
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-    console.log('PodGroup Node clicked:', id);
     setSelectedElementId(id);
   };
 
@@ -29,9 +28,9 @@ const CustomNodePodGroup: React.FC<NodeProps> = ({ id, data }) => {
         transition: 'border 0.1s ease-in-out, box-shadow 0.1s ease-in-out',
       }}
     >
-      <Handle type="target" position={Position.Top} isConnectable={true} />
+      <Handle type="target" position={Position.Top} id="pg-target-a" isConnectable={true} />
       <div>{data?.label || 'Pod Group'}</div>
-      <Handle type="source" position={Position.Bottom} isConnectable={true} />
+      <Handle type="source" position={Position.Bottom} id="pg-source-a" isConnectable={true} />
     </div>
   );
 };

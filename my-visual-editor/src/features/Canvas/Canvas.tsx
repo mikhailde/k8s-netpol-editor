@@ -13,10 +13,15 @@ import 'reactflow/dist/style.css';
 import { useAppStore } from '../../store/store';
 import CustomNodeNamespace from '../Nodes/CustomNodeNamespace';
 import CustomNodePodGroup from '../Nodes/CustomNodePodGroup';
+import CustomRuleEdge from '../Edges/CustomRuleEdge';
 
 const nodeTypes = {
   namespace: CustomNodeNamespace,
   podGroup: CustomNodePodGroup,
+};
+
+const edgeTypes = {
+  customRuleEdge: CustomRuleEdge,
 };
 
 let idCounter = 0;
@@ -143,6 +148,7 @@ const Canvas: React.FC = () => {
         onDragOver={onDragOver}
         onDrop={onDrop}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onPaneClick={handlePaneClick}
         fitView
         nodesDraggable={true}

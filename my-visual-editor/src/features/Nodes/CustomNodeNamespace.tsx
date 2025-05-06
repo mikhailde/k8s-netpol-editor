@@ -12,7 +12,6 @@ const CustomNodeNamespace: React.FC<NodeProps<CustomNodeNamespaceData>> = ({ id,
 
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-    console.log('Namespace Node clicked:', id);
     setSelectedElementId(id);
   };
 
@@ -38,14 +37,14 @@ const CustomNodeNamespace: React.FC<NodeProps<CustomNodeNamespaceData>> = ({ id,
         transition: 'border 0.1s ease-in-out, box-shadow 0.1s ease-in-out',
       }}
     >
-      <Handle type="target" position={Position.Top} isConnectable={true} />
+      <Handle type="target" position={Position.Top} id="ns-target-a" isConnectable={true} />
 
       <div>{data?.label || 'Неймспейс Узел'}</div>
       <div style={{ marginTop: '15px', color: '#888', fontSize: '0.9em', fontStyle: 'italic' }}>
         (Перетащите Группу Подов сюда)
       </div>
 
-      <Handle type="source" position={Position.Bottom} isConnectable={true} />
+      <Handle type="source" position={Position.Bottom} id="ns-source-a" isConnectable={true} />
     </div>
   );
 };
