@@ -2,7 +2,8 @@ import React from 'react';
 import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge } from 'reactflow';
 
 const CustomRuleEdge: React.FC<EdgeProps> = ({
-  id: _id,
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+  id,
   sourceX,
   sourceY,
   targetX,
