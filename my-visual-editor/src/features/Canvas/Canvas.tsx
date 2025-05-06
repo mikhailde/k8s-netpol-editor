@@ -17,17 +17,19 @@ import 'reactflow/dist/style.css';
 
 import CustomNodeNamespace from '../Nodes/CustomNodeNamespace';
 import CustomNodePodGroup from '../Nodes/CustomNodePodGroup';
+import CustomRuleEdge from '../Edges/CustomRuleEdge';
 
 const nodeTypes = {
   namespace: CustomNodeNamespace,
   podGroup: CustomNodePodGroup,
 };
 
-let id = 0;
-const getId = () => `dndnode_${id++}`;
+const edgeTypes = {
+  customRuleEdge: CustomRuleEdge,
+};
 
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
+let idCounter = 0;
+const getId = () => `dndnode_${idCounter++}`;
 
 const Canvas: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -125,6 +127,8 @@ const Canvas: React.FC = () => {
         onDragOver={onDragOver}
         onDrop={onDrop}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        onPaneClick={handlePaneClick}
         fitView
         nodesDraggable={true}
         nodesConnectable={true}>
