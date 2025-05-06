@@ -2,7 +2,7 @@ import React from 'react';
 import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge } from 'reactflow';
 
 const CustomRuleEdge: React.FC<EdgeProps> = ({
-  id,
+  id: _id,
   sourceX,
   sourceY,
   targetX,
