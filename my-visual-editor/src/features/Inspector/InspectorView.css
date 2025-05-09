@@ -95,3 +95,67 @@
     background-color: #cccccc;
     cursor: not-allowed;
   }
+
+  .label-entry {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #fff;
+  }
+  
+  .label-entry span.label-key {
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-right: 5px;
+    color: #333;
+  }
+  
+  .label-entry span.label-value {
+    flex-grow: 1;
+    word-break: break-all;
+    background-color: #f0f0f0;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: #555;
+  }
+  
+  .inspector-button-sm {
+    padding: 4px 8px;
+    font-size: 0.85em;
+    margin-left: 5px;
+    line-height: 1.2;
+    min-width: 30px;
+    text-align: center;
+  }
+  
+  .inspector-button-danger {
+    background-color: #dc3545;
+    color: white;
+  }
+  .inspector-button-danger:hover:not(:disabled) {
+    background-color: #c82333;
+  }
+  .inspector-button-danger:disabled {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+  
+  
+  .add-label-form h4 {
+      margin-top: 15px;
+      margin-bottom: 10px;
+      font-size: 1.05em;
+      color: #444;
+      border-top: 1px solid #eee;
+      padding-top: 15px;
+  }
+  
+  .add-label-form > div {
+      margin-bottom: 10px;
+  }
