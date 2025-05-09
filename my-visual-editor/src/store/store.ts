@@ -30,6 +30,7 @@ interface AppState {
   onConnect: (connection: Connection) => void;
   addNode: (node: Node) => void;
   deleteElements: (elementsToRemove: { nodes?: Node[]; edges?: Edge[] }) => void;
+  updateNodeData: (nodeId: string, newData: Partial<Node['data']>) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -61,7 +62,6 @@ export const useAppStore = create<AppState>((set) => ({
     const sourceNode = state.nodes.find(node => node.id === connection.source);
     const targetNode = state.nodes.find(node => node.id === connection.target);
 
-
     if (sourceNode && targetNode) {
       let isValidConnection = false;
       let ruleAppliedMessage = 'connection_disallowed';
@@ -72,8 +72,7 @@ export const useAppStore = create<AppState>((set) => ({
       ) {
         isValidConnection = true;
         ruleAppliedMessage = 'podgroup_to_namespace';
-      }
-      else if (
+      } else if (
         sourceNode.type === 'namespace' && connection.sourceHandle === 'ns-source-a' &&
         targetNode.type === 'podGroup' && connection.targetHandle === 'pg-target-a'
       ) {
@@ -141,5 +140,15 @@ export const useAppStore = create<AppState>((set) => ({
         selectedElementId: newSelectedElementId,
       };
     });
-  }
+  },
+
+  updateNodeData: (nodeId, newData) => {
+    set((state) => ({
+      nodes: state.nodes.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...newData } }
+          : node
+      ),
+    }));
+  },
 }));
