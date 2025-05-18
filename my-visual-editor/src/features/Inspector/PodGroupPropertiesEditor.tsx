@@ -1,20 +1,7 @@
-// src/features/Inspector/PodGroupPropertiesEditor.tsx
 import React, { useState, useEffect } from 'react';
 import { Node } from 'reactflow';
 import { useAppStore } from '../../store/store';
-
-export interface PodGroupNodeData {
-  label?: string;
-  labels: Record<string, string>;
-  metadata: {
-    name: string;
-    namespace: string;
-  };
-  policyConfig: {
-    defaultDenyIngress: boolean;
-    defaultDenyEgress: boolean;
-  };
-}
+import { PodGroupNodeData } from '../../types';
 
 interface PodGroupPropertiesEditorProps {
   node: Node<PodGroupNodeData>;
@@ -73,7 +60,7 @@ const errorTextStyle: React.CSSProperties = {
 
 const inputErrorStyle: React.CSSProperties = {
   borderColor: 'red',
-  boxShadow: '0 0 0 1px rgba(255,0,0,.25)', // Уменьшил размытие для компактности
+  boxShadow: '0 0 0 1px rgba(255,0,0,.25)',
 };
 
 // --- Component ---

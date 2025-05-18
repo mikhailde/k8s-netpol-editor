@@ -1,10 +1,7 @@
 import React from 'react';
 import { Node } from 'reactflow';
+import { NamespaceNodeData } from '../../types';
 import { useAppStore } from '../../store/store';
-
-interface NamespaceNodeData {
-  label?: string;
-}
 
 interface NamespacePropertiesEditorProps {
   node: Node<NamespaceNodeData>;

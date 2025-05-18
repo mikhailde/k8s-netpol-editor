@@ -1,3 +1,4 @@
+// src/store/store.ts
 import { create } from 'zustand';
 import {
   Node,
@@ -7,23 +8,18 @@ import {
   Connection,
   applyNodeChanges,
   applyEdgeChanges,
-  addEdge as reactFlowAddEdge,
 } from 'reactflow';
+import { PortProtocolEntry } from '../types';
 
 type ElementId = string | null;
 
 interface AppState {
-  count: number;
-  increment: () => void;
-  decrement: () => void;
 
   selectedElementId: ElementId;
   setSelectedElementId: (id: ElementId) => void;
 
   nodes: Node[];
   edges: Edge[];
-  setNodes: (nodes: Node[]) => void;
-  setEdges: (edges: Edge[]) => void;
 
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -31,91 +27,77 @@ interface AppState {
   addNode: (node: Node) => void;
   deleteElements: (elementsToRemove: { nodes?: Node[]; edges?: Edge[] }) => void;
   updateNodeData: (nodeId: string, newData: Partial<Node['data']>) => void;
+  updateEdgeData: (edgeId: string, newData: Partial<Edge['data']>) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  count: 0,
-  increment: () => set((state) => ({ count: state.count + 1 })),
-  decrement: () => set((state) => ({ count: state.count - 1 })),
 
   selectedElementId: null,
   setSelectedElementId: (id) => set({ selectedElementId: id }),
 
   nodes: [],
   edges: [],
-  setNodes: (nodes) => set({ nodes }),
-  setEdges: (edges) => set({ edges }),
 
-  onNodesChange: (changes) => {
-    set({
-      nodes: applyNodeChanges(changes, get().nodes),
-    });
-  },
-  onEdgesChange: (changes) => {
-    set({
-      edges: applyEdgeChanges(changes, get().edges),
-    });
-  },
+  onNodesChange: (changes) => set({ nodes: applyNodeChanges(changes, get().nodes) }),
+  onEdgesChange: (changes) => set({ edges: applyEdgeChanges(changes, get().edges) }),
 
   onConnect: (connection: Connection) => {
     const state = get();
     const sourceNode = state.nodes.find(node => node.id === connection.source);
     const targetNode = state.nodes.find(node => node.id === connection.target);
 
-    if (sourceNode && targetNode) {
-      let isValidConnection = false;
-      let ruleAppliedMessage = 'connection_disallowed';
-
-      if (
-        sourceNode.type === 'podGroup' && connection.sourceHandle === 'pg-source-a' &&
-        targetNode.type === 'namespace' && connection.targetHandle === 'ns-target-a'
-      ) {
-        isValidConnection = true;
-        ruleAppliedMessage = 'podgroup_to_namespace';
-      } else if (
-        sourceNode.type === 'namespace' && connection.sourceHandle === 'ns-source-a' &&
-        targetNode.type === 'podGroup' && connection.targetHandle === 'pg-target-a'
-      ) {
-        isValidConnection = true;
-        ruleAppliedMessage = 'namespace_to_podgroup';
-      }
-
-      if (isValidConnection) {
-        const sourceHandleId = connection.sourceHandle ? `_h-${connection.sourceHandle}` : '';
-        const targetHandleId = connection.targetHandle ? `_h-${connection.targetHandle}` : '';
-        const newEdgeId = `edge_${connection.source}${sourceHandleId}-to-${connection.target}${targetHandleId}_${Date.now()}`;
-
-        const newCustomEdge: Edge = {
-          id: newEdgeId,
-          source: connection.source!,
-          target: connection.target!,
-          sourceHandle: connection.sourceHandle,
-          targetHandle: connection.targetHandle,
-          type: 'customRuleEdge',
-          animated: true,
-          data: {
-            ruleApplied: ruleAppliedMessage,
-            timestamp: new Date().toISOString(),
-            sourceNodeType: sourceNode.type,
-            targetNodeType: targetNode.type,
-          },
-        };
-
-        set({
-          edges: reactFlowAddEdge(newCustomEdge, state.edges),
-        });
-        console.log(`Custom edge created based on rule: ${ruleAppliedMessage}`, newCustomEdge);
-      } else {
-        console.warn(`Connection disallowed by rules: ${sourceNode.type} (${connection.sourceHandle}) -> ${targetNode.type} (${connection.targetHandle})`);
-      }
-    } else {
+    if (!sourceNode || !targetNode) {
       console.warn('Edge creation prevented: Source or target node not found. Connection:', connection);
+      return;
+    }
+
+    let isValidConnection = false;
+    let ruleAppliedMessage = 'connection_disallowed';
+
+    if (
+      sourceNode.type === 'podGroup' && connection.sourceHandle === 'pg-source-a' &&
+      targetNode.type === 'namespace' && connection.targetHandle === 'ns-target-a'
+    ) {
+      isValidConnection = true;
+      ruleAppliedMessage = 'podgroup_to_namespace';
+    } else if (
+      sourceNode.type === 'namespace' && connection.sourceHandle === 'ns-source-a' &&
+      targetNode.type === 'podGroup' && connection.targetHandle === 'pg-target-a'
+    ) {
+      isValidConnection = true;
+      ruleAppliedMessage = 'namespace_to_podgroup';
+    }
+
+    if (isValidConnection) {
+      const sourceHandleSuffix = connection.sourceHandle ? `_h-${connection.sourceHandle}` : '';
+      const targetHandleSuffix = connection.targetHandle ? `_h-${connection.targetHandle}` : '';
+      const newEdgeId = `edge_${connection.source}${sourceHandleSuffix}-to-${connection.target}${targetHandleSuffix}_${Date.now()}`;
+
+      const newCustomEdge: Edge = {
+        id: newEdgeId,
+        source: connection.source!,
+        target: connection.target!,
+        sourceHandle: connection.sourceHandle,
+        targetHandle: connection.targetHandle,
+        type: 'customRuleEdge',
+        animated: true,
+        data: {
+          ruleApplied: ruleAppliedMessage,
+          timestamp: new Date().toISOString(),
+          sourceNodeType: sourceNode.type,
+          targetNodeType: targetNode.type,
+          ports: [] as PortProtocolEntry[],
+        },
+      };
+
+      set({ edges: [...state.edges, newCustomEdge] });
+      console.log(`CustomRuleEdge created: ${ruleAppliedMessage} (ID: ${newCustomEdge.id})`);
+    } else {
+      console.warn(`Connection disallowed by rules: ${sourceNode.type} (${connection.sourceHandle}) -> ${targetNode.type} (${connection.targetHandle})`);
     }
   },
 
-  addNode: (node) => {
-    set((state) => ({ nodes: [...state.nodes, node] }));
-  },
+  addNode: (node) => set((state) => ({ nodes: [...state.nodes, node] })),
 
   deleteElements: ({ nodes: nodesToRemove = [], edges: edgesToRemove = [] }) => {
     set((state) => {
@@ -123,12 +105,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       const edgeIdsToRemove = new Set(edgesToRemove.map(e => e.id));
 
       const newNodes = state.nodes.filter((node) => !nodeIdsToRemove.has(node.id));
-      const newEdges = state.edges.filter((edge) =>
+      const currentEdges = state.edges;
+      const newEdges = currentEdges.filter((edge) =>
         !edgeIdsToRemove.has(edge.id) &&
         !nodeIdsToRemove.has(edge.source) &&
         !nodeIdsToRemove.has(edge.target)
       );
-
+      
       let newSelectedElementId = state.selectedElementId;
       if (state.selectedElementId && (nodeIdsToRemove.has(state.selectedElementId) || edgeIdsToRemove.has(state.selectedElementId))) {
         newSelectedElementId = null;
@@ -145,9 +128,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateNodeData: (nodeId, newData) => {
     set((state) => ({
       nodes: state.nodes.map((node) =>
-        node.id === nodeId
-          ? { ...node, data: { ...node.data, ...newData } }
-          : node
+        node.id === nodeId ? { ...node, data: { ...node.data, ...newData } } : node
+      ),
+    }));
+  },
+
+  updateEdgeData: (edgeId, newData) => {
+    set((state) => ({
+      edges: state.edges.map((edge) =>
+        edge.id === edgeId ? { ...edge, data: { ...edge.data, ...newData } } : edge
       ),
     }));
   },

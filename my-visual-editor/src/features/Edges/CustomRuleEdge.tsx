@@ -2,8 +2,6 @@ import React from 'react';
 import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge } from 'reactflow';
 
 const CustomRuleEdge: React.FC<EdgeProps> = ({
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-  id,
   sourceX,
   sourceY,
   targetX,
@@ -13,6 +11,7 @@ const CustomRuleEdge: React.FC<EdgeProps> = ({
   style = {},
   markerEnd,
   data,
+  label,
 }) => {
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -23,22 +22,34 @@ const CustomRuleEdge: React.FC<EdgeProps> = ({
     targetPosition,
   });
 
+  let displayLabel: React.ReactNode = null;
+  if (label) {
+    displayLabel = label;
+  } else if (data?.ruleApplied) {
+    displayLabel = `Rule: ${data.ruleApplied}`;
+  }
+
   return (
     <>
       <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
-      <EdgeLabelRenderer>
-        <div
-          style={{
-            position: 'absolute',
-            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            fontSize: 10,
-            pointerEvents: 'all',
-          }}
-          className="nodrag nopan"
-        >
-          {data?.ruleApplied && `Rule: ${data.ruleApplied}`}
-        </div>
-      </EdgeLabelRenderer>
+      {displayLabel && (
+        <EdgeLabelRenderer>
+          <div
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              fontSize: 10,
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              padding: '2px 4px',
+              borderRadius: '3px',
+              pointerEvents: 'all',
+            }}
+            className="nodrag nopan"
+          >
+            {displayLabel}
+          </div>
+        </EdgeLabelRenderer>
+      )}
     </>
   );
 };

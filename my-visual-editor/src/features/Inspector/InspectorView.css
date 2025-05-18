@@ -159,3 +159,60 @@
   .add-label-form > div {
       margin-bottom: 10px;
   }
+
+.aggregated-rule-details {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.aggregated-rule-details h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.05em;
+  color: #444;
+}
+
+.aggregated-rule-details p {
+  margin-bottom: 8px;
+  font-size: 0.95em;
+}
+
+.aggregated-rule-details ul {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.aggregated-rule-details li button {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #333;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.aggregated-rule-details li button:hover {
+  background-color: #e0e0e0;
+  border-color: #bbb;
+}
+
+.aggregated-rule-details li button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  font-weight: bold;
+}
+
+.aggregated-rule-details hr {
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 15px 0;
+}
