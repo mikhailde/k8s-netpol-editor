@@ -15,3 +15,15 @@ body {
   height: 100%;
   display: flex;
 }
+
+.react-flow__nodes {
+  z-index: 1 !important; 
+}
+
+.react-flow__edges {
+  z-index: 2 !important;
+}
+
+.react-flow__edgelabel-renderer {
+  z-index: 3 !important;
+}
