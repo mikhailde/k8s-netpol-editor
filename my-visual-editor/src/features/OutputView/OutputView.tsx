@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import './OutputView.css';
-import { YamlGenerationService, NetworkPolicy } from '../../services/YamlGenerationService';
+import { YamlGenerationService } from '../../services/YamlGenerationService';
 
 const OutputView: React.FC = () => {
   const [yamlOutput, setYamlOutput] = useState<string>('');
