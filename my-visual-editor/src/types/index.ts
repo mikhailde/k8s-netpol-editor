@@ -1,3 +1,13 @@
+// --- Типы для Валидации ---
+export interface IValidationError {
+  message: string;
+  elementId?: string;
+  fieldKey?: string;
+  severity?: 'error' | 'warning';
+}
+
+// --- Типы для Элементов Холста (UI-специфичные) ---
+
 export interface PortProtocolEntry {
   id: string;
   port: string;
@@ -17,6 +27,12 @@ export interface PodGroupNodeData {
   };
 }
 
+export interface NamespaceNodeData {
+  label?: string;
+}
+
+export type CustomNodeData = PodGroupNodeData | NamespaceNodeData;
+
 export function isPodGroupNodeData(data: unknown): data is PodGroupNodeData {
   if (typeof data !== 'object' || data === null) {
     return false;
@@ -29,13 +45,12 @@ export function isPodGroupNodeData(data: unknown): data is PodGroupNodeData {
     typeof d.policyConfig === 'object' && d.policyConfig !== null &&
     typeof d.policyConfig.defaultDenyIngress === 'boolean' &&
     typeof d.policyConfig.defaultDenyEgress === 'boolean' &&
-    typeof d.labels === 'object' && d.labels !== null
+    (typeof d.labels === 'object' && d.labels !== null)
   );
 }
 
-export interface NamespaceNodeData {
-  label?: string;
-}
+
+// --- Типы для Kubernetes NetworkPolicy (соответствуют спецификации K8s) ---
 
 export interface K8sLabelSelector {
   matchLabels?: { [key: string]: string };

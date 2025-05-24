@@ -1,28 +1,43 @@
 import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { useAppStore } from '../../store/store';
+import { IValidationError, NamespaceNodeData } from '../../types';
 
-interface CustomNodeNamespaceData {
-  label?: string;
-}
+const CustomNodeNamespace: React.FC<NodeProps<NamespaceNodeData>> = ({ id, data, selected }) => {
+  const validationErrors = useAppStore((state) => state.validationErrors);
 
-const CustomNodeNamespace: React.FC<NodeProps<CustomNodeNamespaceData>> = ({ id, data }) => {
-  const setSelectedElementId = useAppStore((state) => state.setSelectedElementId);
-  const selectedElementId = useAppStore((state) => state.selectedElementId);
+  const nodeErrors = validationErrors.filter(
+    (error: IValidationError) => error.elementId === id && error.severity === 'error'
+  );
+  const hasError = nodeErrors.length > 0;
 
-  const handleClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setSelectedElementId(id);
-  };
+  const nodeWarnings = validationErrors.filter(
+    (error: IValidationError) => error.elementId === id && error.severity === 'warning'
+  );
+  const hasWarning = nodeWarnings.length > 0;
 
-  const isSelected = selectedElementId === id;
+  let borderColor = '#1890ff';
+  if (selected) {
+    borderColor = '#ff007f';
+  }
+  if (hasError) {
+    borderColor = 'red';
+  } else if (hasWarning && !selected) {
+    borderColor = 'orange';
+  }
+  
+  let boxShadow = selected ? '0 0 10px rgba(255, 0, 127, 0.5)' : 'none';
+  if (hasError) {
+      boxShadow = selected ? '0 0 8px rgba(255, 0, 0, 0.7)' : '0 0 8px rgba(255, 0, 0, 0.5)';
+  } else if (hasWarning) {
+      boxShadow = selected ? '0 0 8px rgba(255, 165, 0, 0.7)' : '0 0 8px rgba(255, 165, 0, 0.5)';
+  }
 
   return (
     <div
-      onClick={handleClick}
       style={{
         backgroundColor: '#e6f7ff',
-        border: isSelected ? '2px solid #ff007f' : '1px solid #1890ff',
+        border: `2px solid ${borderColor}`,
         borderRadius: '5px',
         padding: '25px',
         minWidth: '250px',
@@ -33,13 +48,16 @@ const CustomNodeNamespace: React.FC<NodeProps<CustomNodeNamespaceData>> = ({ id,
         justifyContent: 'center',
         alignItems: 'center',
         cursor: 'pointer',
-        boxShadow: isSelected ? '0 0 10px rgba(255, 0, 127, 0.5)' : 'none',
-        transition: 'border 0.1s ease-in-out, box-shadow 0.1s ease-in-out',
+        boxShadow: boxShadow,
+        transition: 'border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
       }}
     >
       <Handle type="target" position={Position.Top} id="ns-target-a" isConnectable={true} />
 
       <div>{data?.label || 'Неймспейс Узел'}</div>
+      {hasError && <div style={{ color: 'red', fontSize: '0.8em', marginTop: '3px' }}>Ошибка!</div>}
+      {!hasError && hasWarning && <div style={{ color: 'orange', fontSize: '0.8em', marginTop: '3px' }}>Предупреждение</div>}
+      
       <div style={{ marginTop: '15px', color: '#888', fontSize: '0.9em', fontStyle: 'italic' }}>
         (Перетащите Группу Подов сюда)
       </div>

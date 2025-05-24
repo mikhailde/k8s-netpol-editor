@@ -32,14 +32,19 @@
   transition: background-color 0.2s ease-in-out;
 }
 
-.generate-yaml-button:hover {
+.generate-yaml-button:hover:not(:disabled) {
   background-color: #218838;
 }
+.generate-yaml-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
 
 .yaml-output-panel {
   flex-grow: 1;
-  background-color: #272822;
-  color: #f8f8f2;
+  background-color: #272822; 
+  color: #f8f8f2; 
   padding: 15px;
   border-radius: 4px;
   overflow: auto;
@@ -47,6 +52,7 @@
   font-family: 'Courier New', Courier, monospace;
   font-size: 0.9em;
   border: 1px solid #444;
+  min-height: 200px;
 }
 
 .yaml-output-panel.placeholder {
@@ -58,4 +64,36 @@
   white-space: normal;
   font-style: italic;
   padding: 20px;
+}
+
+.validation-errors-panel {
+  margin-bottom: 15px;
+  padding: 10px 15px;
+  background-color: #fff0f0;
+  border: 1px solid #ffcccc;
+  border-radius: 4px;
+}
+
+.validation-errors-panel h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #d8000c;
+  font-size: 1.05em;
+  font-weight: bold;
+}
+
+.validation-errors-panel ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.validation-errors-panel li {
+  color: #d8000c;
+  font-size: 0.9em;
+  margin-bottom: 4px;
+}
+
+.validation-errors-panel li:last-child {
+  margin-bottom: 0;
 }
