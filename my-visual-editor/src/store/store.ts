@@ -55,6 +55,12 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     if (
       sourceNode.type === 'podGroup' && connection.sourceHandle === 'pg-source-a' &&
+      targetNode.type === 'podGroup' && connection.targetHandle === 'pg-target-a'
+    ) {
+      isValidConnection = true;
+      ruleAppliedMessage = 'podgroup_to_podgroup';
+    } else if (
+      sourceNode.type === 'podGroup' && connection.sourceHandle === 'pg-source-a' &&
       targetNode.type === 'namespace' && connection.targetHandle === 'ns-target-a'
     ) {
       isValidConnection = true;
