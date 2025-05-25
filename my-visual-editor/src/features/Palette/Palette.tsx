@@ -20,23 +20,38 @@ const Palette: React.FC = () => {
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, nodeType: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      console.log(`Элемент ${nodeType} активирован клавишей ${event.key}. Логика drag-and-drop с клавиатуры требует доп. реализации.`);
+    }
+  };
+
   return (
-    <aside className={`palette-panel ${styles.palettePanel}`}> 
+    <aside className={`palette-panel ${styles.palettePanel}`}>
       <div className={styles.description}>Перетащите узлы на холст:</div>
-      
-      <div 
-        className={`${styles.dndNode} ${styles.dndNodeNamespace}`} 
-        onDragStart={(event) => onDragStart(event, 'namespace')} 
+
+      <div
+        className={`${styles.dndNode} ${styles.dndNodeNamespace}`}
+        onDragStart={(event) => onDragStart(event, 'namespace')}
         draggable
+        tabIndex={0}
+        role="button"
+        aria-label="Перетащить Неймспейс на холст"
+        onKeyDown={(event) => handleKeyDown(event, 'namespace')}
       >
         <NamespaceIcon />
         <span>Неймспейс</span>
       </div>
-      
-      <div 
-        className={`${styles.dndNode} ${styles.dndNodePodGroup}`} 
-        onDragStart={(event) => onDragStart(event, 'podGroup')} 
+
+      <div
+        className={`${styles.dndNode} ${styles.dndNodePodGroup}`}
+        onDragStart={(event) => onDragStart(event, 'podGroup')}
         draggable
+        tabIndex={0}
+        role="button"   
+        aria-label="Перетащить Группу Подов на холст"
+        onKeyDown={(event) => handleKeyDown(event, 'podGroup')}
       >
         <PodGroupIcon />
         <span>Группа Подов</span>

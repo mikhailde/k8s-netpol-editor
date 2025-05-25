@@ -202,6 +202,8 @@ const CanvasComponent: React.FC = () => {
         fitView
         nodesDraggable={true}
         nodesConnectable={true}
+        nodesFocusable={false}
+        proOptions={{ hideAttribution: true }}
       >
         <Controls />
         <MiniMap nodeStrokeWidth={3} zoomable pannable />
