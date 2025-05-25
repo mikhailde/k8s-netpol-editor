@@ -361,7 +361,7 @@
 }
 .labelEntry .formInput {
   flex-grow: 1;
-  padding: calc(var(--spacing-unit) * 0.5) calc(var(--spacing-unit) * 0.75); /* Компактнее */
+  padding: calc(var(--spacing-unit) * 0.5) calc(var(--spacing-unit) * 0.75);
   margin-left: calc(var(--spacing-unit) * 0.5);
 }
 .labelValueInput {

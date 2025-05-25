@@ -19,7 +19,12 @@ export class YamlGenerationService {
   private transformUiPortToK8sPort(uiPortEntry: PortProtocolEntry): NetworkPolicyPort | null {
     const k8sPort: NetworkPolicyPort = {};
 
-    if (uiPortEntry.protocol && uiPortEntry.protocol !== 'ANY' && uiPortEntry.protocol !== 'ICMP') {
+    if (uiPortEntry.protocol === 'ICMP') {
+      if (uiPortEntry.port && uiPortEntry.port.toLowerCase() !== 'any') {
+        console.warn(`[YamlGenSvc] Для протокола ICMP указан порт '${uiPortEntry.port}', правило для этого порта/протокола будет пропущено.`);
+        return null;
+      }
+    } else if (uiPortEntry.protocol && uiPortEntry.protocol !== 'ANY') {
       if (['TCP', 'UDP', 'SCTP'].includes(uiPortEntry.protocol)) {
         k8sPort.protocol = uiPortEntry.protocol as 'TCP' | 'UDP' | 'SCTP';
       } else {
@@ -38,10 +43,15 @@ export class YamlGenerationService {
             k8sPort.port = numericPort;
           } else {
             console.warn(`[YamlGenSvc] Номер порта '${numericPort}' вне допустимого диапазона (1-65535), будет пропущен.`);
-             return null;
+            return null;
           }
         } else {
-          k8sPort.port = uiPortEntry.port;
+          if (/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(uiPortEntry.port) && uiPortEntry.port.length <= 63) {
+            k8sPort.port = uiPortEntry.port;
+          } else {
+            console.warn(`[YamlGenSvc] Имя порта '${uiPortEntry.port}' некорректно (не соответствует DNS-1123 label или слишком длинное), будет пропущено.`);
+            return null;
+          }
         }
       }
     }
