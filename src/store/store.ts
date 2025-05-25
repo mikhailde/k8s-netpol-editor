@@ -64,6 +64,8 @@ export const useAppStore: AppStoreType = create<AppState>((set, get) => {
     },
 
     onConnect: (connection: Connection | Edge) => {
+      console.log('--- [STORE] onConnect CALLED ---');
+      console.log('[STORE] Connection object:', JSON.stringify(connection, null, 2));
       const state = get(); 
       if (!('source' in connection) || !('target' in connection) || !connection.source || !connection.target) {
         console.warn('[Store] onConnect: Invalid connection object received.', connection);
@@ -78,7 +80,7 @@ export const useAppStore: AppStoreType = create<AppState>((set, get) => {
         return;
       }
 
-      let isValidConnection = false;
+      let isValidConnection = true;
       let ruleAppliedMessage: string;
 
       if (
