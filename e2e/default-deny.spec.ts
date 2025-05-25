@@ -6,7 +6,6 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('Scenario 9.1: Create default deny policy', () => {
   test('should create a PodGroup with default deny ingress and egress', async ({ page }) => {
-    const podGroupName = 'backend-pod-group';
     const namespaceName = 'default';
     const podGroupLabelKey = 'app';
     const podGroupLabelValue = 'backend';
