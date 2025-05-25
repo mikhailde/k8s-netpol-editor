@@ -1,3 +1,32 @@
+:root {
+  --color-background-app: #f4f6f8;
+  --color-background-panel: #ffffff;
+  --color-background-canvas: #e9edf0;
+  
+  --color-border-light: #e0e6ed;
+  --color-border-medium: #d1d8e0;
+
+  --color-text-primary: #24292f;
+  --color-text-secondary: #57606a;
+  --color-text-placeholder: #8b949e;
+
+  --panel-width-palette: 220px;
+  --panel-width-inspector: 320px;
+  --spacing-unit: 8px;
+
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+
+  --color-accent: #007AFF;
+  --color-accent-hover: #0056b3;
+  --color-accent-light: #e6f2ff;
+  --color-accent-light-hover: #d9e9ff;
+  --color-error: #d73a49;
+  --color-error-hover: #b31d1a;
+  --color-warning: #DBAB09;
+  --color-success: #28a745;
+  --color-success-hover: #218838;
+}
+
 body, html {
   margin: 0;
   padding: 0;
@@ -5,14 +34,19 @@ body, html {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  font-family: sans-serif;
+  font-family: var(--font-family-base);
+  background-color: var(--color-background-app);
+  color: var(--color-text-primary);
 }
-*, *:before, *:after {
+
+*, *::before, *::after {
   box-sizing: inherit;
 }
+
 #root, .App {
   height: 100%;
   width: 100%;
+  display: flex;
 }
 
 .layout-container {
@@ -20,51 +54,53 @@ body, html {
   flex-direction: row;
   height: 100%;
   width: 100%;
-  background-color: #fff;
+  background-color: var(--color-background-app);
 }
 
-.layout-container > .palette-component-class-name {
-   width: 200px;
+.palette-panel {
+   width: var(--panel-width-palette);
    flex-shrink: 0;
-   border-right: 1px solid #ddd;
-   background-color: #fcfcfc;
+   border-right: 1px solid var(--color-border-light);
+   background-color: var(--color-background-panel);
    overflow-y: auto;
    height: 100%;
-   padding: 10px;
 }
-
 
 .canvas-container {
   flex-grow: 1;
   height: 100%;
   position: relative;
   overflow: hidden;
+  background-color: var(--color-background-canvas);
 }
+
 .canvas-container .reactflow-wrapper {
   width: 100%;
   height: 100%;
 }
 
 .inspector-container {
-  width: 300px; 
+  width: var(--panel-width-inspector);
   flex-shrink: 0;
-  background-color: #f8f8f8;
+  background-color: var(--color-background-panel);
   height: 100%;
-  display: flex; 
+  display: flex;
   flex-direction: column;
-  border-left: 1px solid #ddd;
+  border-left: 1px solid var(--color-border-light);
 }
 
 .inspector-panel {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--color-border-light);
   display: flex;
   flex-direction: column;
 }
-.inspector-panel > .inspector-view {
+
+.inspector-view-root {
     flex-grow: 1;
+    padding: calc(var(--spacing-unit) * 2);
 }
 
 
@@ -74,4 +110,21 @@ body, html {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+}
+.output-view-root {
+    flex-grow: 1;
+    padding: calc(var(--spacing-unit) * 2);
+}
+
+.edge-counter-display {
+  position: fixed;
+  top: calc(var(--spacing-unit) * 5);
+  right: var(--spacing-unit);
+  background-color: rgba(255, 235, 59, 0.85);
+  color: var(--color-text-primary);
+  padding: var(--spacing-unit) calc(var(--spacing-unit) * 1.5);
+  z-index: 10000;
+  border-radius: 4px;
+  font-size: 0.85em;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }

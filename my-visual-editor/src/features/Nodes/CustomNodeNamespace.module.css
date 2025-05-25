@@ -1,0 +1,68 @@
+.nodeBase {
+  background-color: #e6f7ff;
+  border: 2px solid #1890ff;
+  border-radius: 5px;
+  padding: 25px;
+  min-width: 250px;
+  min-height: 150px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.nodeLabel {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.statusTextBase {
+  font-size: 0.8em;
+  margin-top: 4px;
+}
+
+.errorText {
+  composes: statusTextBase;
+  color: red;
+  font-weight: bold;
+}
+
+.warningText {
+  composes: statusTextBase;
+  color: orange;
+  font-weight: bold;
+}
+
+.hintText {
+  margin-top: 15px;
+  color: #777;
+  font-size: 0.85em;
+  font-style: italic;
+}
+
+.warningState {
+  border-color: orange;
+  box-shadow: 0 0 8px rgba(255, 165, 0, 0.5);
+}
+
+.selectedState {
+  border-color: #ff007f;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
+}
+
+.errorState {
+  border-color: red;
+  box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+}
+
+.selectedState.warningState {
+  box-shadow: 0 0 8px rgba(255, 165, 0, 0.7);
+}
+
+.selectedState.errorState {
+  box-shadow: 0 0 8px rgba(255, 0, 0, 0.7);
+}

@@ -1,30 +1,40 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Node } from 'reactflow';
-import { NamespaceNodeData } from '../../types';
+import { NamespaceNodeData, IValidationError } from '../../types';
 import { useAppStore } from '../../store/store';
+import styles from '../Inspector/InspectorView.module.css';
 
 interface NamespacePropertiesEditorProps {
   node: Node<NamespaceNodeData>;
+  nodeIssues: IValidationError[];
 }
 
-const NamespacePropertiesEditor: React.FC<NamespacePropertiesEditorProps> = ({ node }) => {
+const getFieldError = (fieldKey: string, issues: IValidationError[]): string | undefined => {
+  return issues.find(issue => issue.fieldKey === fieldKey)?.message;
+};
+
+const NamespacePropertiesEditor: React.FC<NamespacePropertiesEditorProps> = ({ node, nodeIssues }) => {
   const updateNodeData = useAppStore((state) => state.updateNodeData);
 
   const handleLabelChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     updateNodeData(node.id, { label: event.target.value });
   };
 
-  const stopPropagation = (e: React.KeyboardEvent) => {
+  const stopPropagation = (e: React.KeyboardEvent<HTMLInputElement>) => {
     e.stopPropagation();
   };
 
+  const labelError = useMemo(() => getFieldError('label', nodeIssues), [nodeIssues]);
+
   return (
-    <div style={{ padding: '10px' }}>
-      <h4>Namespace Properties (ID: {node.id})</h4>
-      <div style={{ marginBottom: '10px' }}>
+    <> 
+      {}
+      {}
+      
+      <div> {}
         <label
           htmlFor={`ns-label-${node.id}`}
-          style={{ display: 'block', marginBottom: '5px' }}
+          className={styles.formLabel}
         >
           Label:
         </label>
@@ -34,11 +44,12 @@ const NamespacePropertiesEditor: React.FC<NamespacePropertiesEditorProps> = ({ n
           value={node.data?.label || ''}
           onChange={handleLabelChange}
           onKeyDown={stopPropagation}
-          style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+          className={`${styles.formInput} ${labelError ? styles.formInputError : ''}`}
           placeholder="Enter namespace label"
         />
+        {labelError && <span className={styles.errorMessage}>{labelError}</span>}
       </div>
-    </div>
+    </>
   );
 };
 

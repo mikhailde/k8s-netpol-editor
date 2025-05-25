@@ -1,0 +1,32 @@
+.edgeLabelBase {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 5px;
+  pointer-events: all;
+  background-color: rgba(240, 242, 245, 0.92);
+  color: #24292f;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  border: 1px solid transparent;
+}
+
+.edgeLabelSelected {
+}
+
+.edgeLabelError {
+  background-color: rgba(255, 229, 229, 0.95);
+  color: #b31d1a;
+  border-color: rgba(215, 58, 73, 0.6);
+  font-weight: 600;
+}
+
+.edgeLabelWarning {
+  background-color: rgba(255, 244, 223, 0.95);
+  color: #7d5f00;
+  border-color: rgba(219, 171, 9, 0.6);
+  font-weight: 600;
+}

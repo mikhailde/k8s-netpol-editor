@@ -1,81 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Node } from 'reactflow';
 import { useAppStore } from '../../store/store';
-import { PodGroupNodeData } from '../../types';
+import { PodGroupNodeData, IValidationError } from '../../types';
+import styles from '../Inspector/InspectorView.module.css';
 
 interface PodGroupPropertiesEditorProps {
   node: Node<PodGroupNodeData>;
+  nodeIssues: IValidationError[];
 }
 
-// --- Styles ---
-const commonInputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '8px',
-  boxSizing: 'border-box',
-  border: '1px solid #ccc',
-  borderRadius: '4px',
-  fontSize: '0.95em',
+const getFieldError = (fieldKey: string, issues: IValidationError[]): string | undefined => {
+  return issues.find(issue => issue.fieldKey === fieldKey)?.message;
 };
 
-const commonButtonStyle: React.CSSProperties = {
-  padding: '8px 12px',
-  color: 'white',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer',
-  fontSize: '0.9em',
-  textAlign: 'center',
-};
-
-const smallButtonStyle: React.CSSProperties = {
-  ...commonButtonStyle,
-  padding: '4px 8px',
-  fontSize: '0.85em',
-};
-
-const sectionStyle: React.CSSProperties = {
-  marginBottom: '18px',
-  paddingBottom: '15px',
-  borderBottom: '1px solid #eee',
-};
-
-const lastSectionStyle: React.CSSProperties = {
-  marginBottom: '10px',
-};
-
-const formSectionStyle: React.CSSProperties = {
-  border: '1px solid #e0e0e0',
-  padding: '12px',
-  borderRadius: '4px',
-  backgroundColor: '#f9f9f9',
-  marginTop: '10px',
-};
-
-const errorTextStyle: React.CSSProperties = {
-  color: 'red',
-  fontSize: '0.85em',
-  marginTop: '3px',
-  marginBottom: '5px',
-};
-
-const inputErrorStyle: React.CSSProperties = {
-  borderColor: 'red',
-  boxShadow: '0 0 0 1px rgba(255,0,0,.25)',
-};
-
-// --- Component ---
-const PodGroupPropertiesEditor: React.FC<PodGroupPropertiesEditorProps> = ({ node }) => {
+const PodGroupPropertiesEditor: React.FC<PodGroupPropertiesEditorProps> = ({ node, nodeIssues }) => {
   const updateNodeData = useAppStore((state) => state.updateNodeData);
-
-  const [newLabelKey, setNewLabelKey] = useState('');
-  const [newLabelValue, setNewLabelValue] = useState('');
-  const [addLabelError, setAddLabelError] = useState('');
-
-  const [editingLabelKey, setEditingLabelKey] = useState<string | null>(null);
-  const [editLabelValue, setEditLabelValue] = useState('');
-  const [editLabelError, setEditLabelError] = useState('');
-
-  const [namespaceError, setNamespaceError] = useState('');
 
   const { metadata, policyConfig, labels } = node.data || {
     metadata: { name: '', namespace: '' },
@@ -83,52 +22,56 @@ const PodGroupPropertiesEditor: React.FC<PodGroupPropertiesEditorProps> = ({ nod
     labels: {},
   };
 
+  const [newLabelKey, setNewLabelKey] = useState('');
+  const [newLabelValue, setNewLabelValue] = useState('');
+  const [editingLabelKey, setEditingLabelKey] = useState<string | null>(null);
+  const [editLabelValue, setEditLabelValue] = useState('');
+  
+  const [uiAddLabelError, setUiAddLabelError] = useState('');
+  const [uiEditLabelError, setUiEditLabelError] = useState('');
+
+
   useEffect(() => {
     setEditingLabelKey(null);
     setEditLabelValue('');
     setNewLabelKey('');
     setNewLabelValue('');
-    setAddLabelError('');
-    setEditLabelError('');
-    if (!metadata.namespace?.trim()) {
-      setNamespaceError('Namespace is required.');
-    } else {
-      setNamespaceError('');
-    }
-  }, [node.id, metadata.namespace]);
+    setUiAddLabelError('');
+    setUiEditLabelError('');
+  }, [node.id]);
 
-  const stopPropagation = (e: React.KeyboardEvent) => e.stopPropagation();
+  const stopPropagation = (e: React.KeyboardEvent | React.ChangeEvent<HTMLInputElement>) => e.stopPropagation();
 
   const handleFieldChange = (
-    field: 'namespace' | keyof PodGroupNodeData['policyConfig'],
+    field: 'metadata.namespace' | `policyConfig.${keyof PodGroupNodeData['policyConfig']}`,
     value: string | boolean
   ) => {
-    if (field === 'namespace' && typeof value === 'string') {
-      if (!value.trim()) {
-        setNamespaceError('Namespace is required.');
-      } else {
-        setNamespaceError('');
-      }
+    if (field === 'metadata.namespace' && typeof value === 'string') {
       updateNodeData(node.id, { metadata: { ...metadata, namespace: value } });
-    } else if (typeof value === 'boolean' && (field === 'defaultDenyIngress' || field === 'defaultDenyEgress')) {
-      updateNodeData(node.id, { policyConfig: { ...policyConfig, [field]: value } });
+    } else if (field.startsWith('policyConfig.') && typeof value === 'boolean') {
+      const configKey = field.split('.')[1] as keyof PodGroupNodeData['policyConfig'];
+      updateNodeData(node.id, { policyConfig: { ...policyConfig, [configKey]: value } });
     }
   };
+
+  const namespaceError = useMemo(() => getFieldError('metadata.namespace', nodeIssues), [nodeIssues]);
 
   const handleAddLabel = () => {
     const trimmedKey = newLabelKey.trim();
     const trimmedValue = newLabelValue.trim();
-    setEditLabelError('');
+    setUiEditLabelError('');
 
-    if (!trimmedKey || !trimmedValue) {
-      setAddLabelError('Label key and value cannot be empty.');
-      return;
+    if (!trimmedKey) {
+      setUiAddLabelError('Ключ метки не может быть пустым.'); return;
+    }
+    if (!trimmedValue) {
+      setUiAddLabelError('Значение метки не может быть пустым.'); return;
     }
     if (labels && Object.keys(labels).some(k => k.toLowerCase() === trimmedKey.toLowerCase())) {
-      setAddLabelError(`Label key "${trimmedKey}" already exists (case-insensitive).`);
-      return;
+      setUiAddLabelError(`Метка с ключом "${trimmedKey}" уже существует.`); return;
     }
-    setAddLabelError('');
+
+    setUiAddLabelError('');
     updateNodeData(node.id, { labels: { ...labels, [trimmedKey]: trimmedValue } });
     setNewLabelKey('');
     setNewLabelValue('');
@@ -138,19 +81,19 @@ const PodGroupPropertiesEditor: React.FC<PodGroupPropertiesEditorProps> = ({ nod
     const updatedLabels = { ...labels };
     delete updatedLabels[keyToDelete];
     updateNodeData(node.id, { labels: updatedLabels });
-    if (addLabelError.toLowerCase().includes(keyToDelete.toLowerCase())) setAddLabelError('');
+    if (uiAddLabelError.toLowerCase().includes(keyToDelete.toLowerCase())) setUiAddLabelError('');
     if (editingLabelKey === keyToDelete) {
       setEditingLabelKey(null);
       setEditLabelValue('');
-      setEditLabelError('');
+      setUiEditLabelError('');
     }
   };
 
   const handleEditLabelClick = (key: string, currentValue: string) => {
     setEditingLabelKey(key);
     setEditLabelValue(currentValue);
-    setAddLabelError('');
-    setEditLabelError('');
+    setUiAddLabelError('');
+    setUiEditLabelError('');
   };
 
   const handleSaveLabel = () => {
@@ -158,122 +101,127 @@ const PodGroupPropertiesEditor: React.FC<PodGroupPropertiesEditorProps> = ({ nod
     const trimmedEditValue = editLabelValue.trim();
 
     if (!trimmedEditValue) {
-      setEditLabelError('Label value cannot be empty.');
-      return;
+      setUiEditLabelError('Значение метки не может быть пустым.'); return;
     }
-    setEditLabelError('');
+    setUiEditLabelError('');
     updateNodeData(node.id, { labels: { ...labels, [editingLabelKey]: trimmedEditValue } });
     setEditingLabelKey(null);
     setEditLabelValue('');
   };
-
+  
   const handleCancelEdit = () => {
     setEditingLabelKey(null);
     setEditLabelValue('');
-    setEditLabelError('');
+    setUiEditLabelError('');
   };
 
-  return (
-    <div style={{ padding: '10px', fontSize: '0.95em' }}>
-      <h4 style={{ marginTop: 0, marginBottom: '15px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
-        PodGroup: {metadata.name || node.id}
-      </h4>
+  const labelsSectionError = useMemo(() => getFieldError('labels', nodeIssues), [nodeIssues]);
 
-      <div style={sectionStyle}>
-        <h5 style={{ marginTop: 0, marginBottom: '10px' }}>Metadata</h5>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor={`ns-${node.id}`} style={{ display: 'block', marginBottom: '3px', fontSize: '0.9em' }}>Namespace (required):</label>
-          <input id={`ns-${node.id}`} type="text" value={metadata.namespace}
-            onChange={(e) => handleFieldChange('namespace', e.target.value)}
+  return (
+    <>
+      <div className={styles.section}>
+        <span className={styles.sectionTitle}>Metadata</span>
+        <div>
+          <label htmlFor={`ns-${node.id}`} className={styles.formLabel}>Namespace (required):</label>
+          <input 
+            id={`ns-${node.id}`} type="text" value={metadata.namespace}
+            onChange={(e) => { stopPropagation(e); handleFieldChange('metadata.namespace', e.target.value); }}
             onKeyDown={stopPropagation}
-            style={{ ...commonInputStyle, ...(namespaceError ? inputErrorStyle : {}) }}
+            className={`${styles.formInput} ${namespaceError ? styles.formInputError : ''}`}
             placeholder="Enter namespace"
           />
-          {namespaceError && <p style={errorTextStyle}>{namespaceError}</p>}
+          {namespaceError && <span className={styles.errorMessage}>{namespaceError}</span>}
         </div>
-        <div>
-          <label htmlFor={`name-${node.id}`} style={{ display: 'block', marginBottom: '3px', fontSize: '0.9em' }}>Name (auto-generated):</label>
-          <input id={`name-${node.id}`} type="text" value={metadata.name} readOnly
-            onKeyDown={stopPropagation} style={{ ...commonInputStyle, backgroundColor: '#f0f0f0' }}
+        <div style={{ marginTop: 'var(--spacing-unit)' }}> 
+          <label htmlFor={`name-${node.id}`} className={styles.formLabel}>Name (auto-generated):</label>
+          <input 
+            onKeyDown={stopPropagation} 
+            className={styles.formInput} 
+            style={{ backgroundColor: '#f0f0f0' }}
           />
         </div>
       </div>
 
-      <div style={sectionStyle}>
-        <h5 style={{ marginTop: 0, marginBottom: '10px' }}>Policy Configuration</h5>
+      <div className={styles.section}>
+        <span className={styles.sectionTitle}>Policy Configuration</span>
         {(['defaultDenyIngress', 'defaultDenyEgress'] as const).map(key => (
-          <div key={key} style={{ marginBottom: '5px' }}>
-            <input type="checkbox" id={`${key}-${node.id}`}
+          <div key={key} className={styles.formCheckboxWrapper} onClick={() => handleFieldChange(`policyConfig.${key}`, !policyConfig[key])}>
+            <input 
+              type="checkbox" 
+              id={`${key}-${node.id}`}
               checked={policyConfig[key]}
-              onChange={(e) => handleFieldChange(key, e.target.checked)}
-              style={{ marginRight: '8px', verticalAlign: 'middle' }}
+              onChange={(e) => {stopPropagation(e); handleFieldChange(`policyConfig.${key}`, e.target.checked)}}
+              className={styles.formCheckbox}
             />
-            <label htmlFor={`${key}-${node.id}`} style={{ verticalAlign: 'middle', fontSize: '0.95em' }}>
+            <label htmlFor={`${key}-${node.id}`} className={styles.formCheckboxLabel}>
               {key.replace('defaultDeny', 'Default Deny ')}
             </label>
           </div>
         ))}
       </div>
 
-      <div style={lastSectionStyle}>
-        <h5 style={{ marginTop: 0, marginBottom: '10px' }}>Labels</h5>
+      <div className={styles.section}>
+        <span className={styles.sectionTitle}>Labels</span>
+        {labelsSectionError && <span className={styles.errorMessage} style={{marginBottom: 'var(--spacing-unit)'}}>{labelsSectionError}</span>}
+        
         {Object.keys(labels).length > 0 || editingLabelKey ? (
-          <div style={{ marginBottom: '15px', maxHeight: '180px', overflowY: 'auto', border: '1px solid #eee', padding: '10px', borderRadius: '4px' }}>
+          <div className={styles.labelsListContainer}>
             {Object.entries(labels).map(([key, value]) => (
-              <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed #f0f0f0', fontSize: '0.9em' }}>
-                <div style={{ flexGrow: 1, marginRight: '10px', wordBreak: 'break-all' }}>
-                  <strong>{key}:</strong>{' '}
-                  {editingLabelKey === key ? (
-                    <input type="text" value={editLabelValue}
+              <div key={key} className={styles.labelEntry}>
+                {editingLabelKey === key ? (
+                  <>
+                    <span className={styles.labelKey}>{key}:</span>
+                    <input 
+                      type="text" value={editLabelValue}
                       onChange={(e) => setEditLabelValue(e.target.value)}
-                      style={{ ...commonInputStyle, width: 'auto', flexGrow: 1, padding: '4px 6px', display: 'inline-block', marginLeft: '5px' }}
+                      className={`${styles.formInput} ${styles.labelValueInput} ${uiEditLabelError ? styles.formInputError : ''}`}
                       autoFocus
                       onKeyDown={(e) => { stopPropagation(e); if (e.key === 'Enter') handleSaveLabel(); if (e.key === 'Escape') handleCancelEdit(); }}
                     />
-                  ) : ( value )}
-                </div>
-                <div style={{ flexShrink: 0, display: 'flex', gap: '5px' }}>
-                  {editingLabelKey === key ? (
-                    <>
-                      <button onClick={handleSaveLabel} style={{ ...smallButtonStyle, backgroundColor: '#28a745' }}>Save</button>
-                      <button onClick={handleCancelEdit} style={{ ...smallButtonStyle, backgroundColor: '#6c757d' }}>Cancel</button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => handleEditLabelClick(key, value)} style={{ ...smallButtonStyle, backgroundColor: '#007bff' }} title={`Edit label ${key}`}>Edit</button>
-                      <button onClick={() => handleDeleteLabel(key)} style={{ ...smallButtonStyle, backgroundColor: '#dc3545' }} title={`Delete label ${key}`}>Delete</button>
-                    </>
-                  )}
-                </div>
+                    <button onClick={handleSaveLabel} className={`${styles.buttonBase} ${styles.buttonSmall} ${styles.buttonSuccess}`}>Save</button>
+                    <button onClick={handleCancelEdit} className={`${styles.buttonBase} ${styles.buttonSmall} ${styles.buttonSecondary}`}>Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <span className={styles.labelKey}>{key}:</span>
+                    <span className={styles.labelValue}>{value}</span>
+                    <button onClick={() => handleEditLabelClick(key, value)} className={`${styles.buttonBase} ${styles.buttonSmall} ${styles.buttonPrimary}`} title={`Edit label ${key}`}>Edit</button>
+                    <button onClick={() => handleDeleteLabel(key)} className={`${styles.buttonBase} ${styles.buttonSmall} ${styles.buttonDanger}`} title={`Delete label ${key}`}>Delete</button>
+                  </>
+                )}
               </div>
             ))}
-            {editLabelError && editingLabelKey && <p style={errorTextStyle}>{editLabelError}</p>}
+             {uiEditLabelError && editingLabelKey && <span className={`${styles.errorMessage} ${styles.labelEditError}`}>{uiEditLabelError}</span>}
           </div>
         ) : (
-          <p style={{ fontStyle: 'italic', color: '#777', margin: '0 0 10px 0', fontSize: '0.9em' }}>No labels defined.</p>
+          <p className={styles.placeholderText}>No labels defined.</p>
         )}
 
         {!editingLabelKey && (
-          <div style={formSectionStyle}>
-            <p style={{ marginTop: 0, marginBottom: '8px', fontSize: '0.95em', fontWeight: 500 }}>Add New Label:</p>
-            {addLabelError && <p style={errorTextStyle}>{addLabelError}</p>}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-              <input type="text" placeholder="Label Key" value={newLabelKey}
-                onChange={(e) => { setNewLabelKey(e.target.value); if (addLabelError) setAddLabelError(''); }}
-                onKeyDown={stopPropagation} style={{ ...commonInputStyle, flex: 1 }}
+          <div className={styles.addLabelForm}>
+            <span className={styles.sectionTitle} style={{fontSize: '1em', marginTop: 'var(--spacing-unit)'}}>Add New Label:</span>
+            {uiAddLabelError && <span className={styles.errorMessage}>{uiAddLabelError}</span>}
+            <div style={{ display: 'flex', gap: 'var(--spacing-unit)', marginBottom: 'var(--spacing-unit)' }}>
+              <input 
+                type="text" placeholder="Label Key" value={newLabelKey}
+                onChange={(e) => { stopPropagation(e); setNewLabelKey(e.target.value); if (uiAddLabelError) setUiAddLabelError(''); }}
+                onKeyDown={stopPropagation} 
+                className={`${styles.formInput} ${uiAddLabelError && !newLabelValue ? styles.formInputError : ''}`}
               />
-              <input type="text" placeholder="Label Value" value={newLabelValue}
-                onChange={(e) => { setNewLabelValue(e.target.value); if (addLabelError) setAddLabelError(''); }}
-                onKeyDown={stopPropagation} style={{ ...commonInputStyle, flex: 1 }}
+              <input 
+                type="text" placeholder="Label Value" value={newLabelValue}
+                onChange={(e) => { stopPropagation(e); setNewLabelValue(e.target.value); if (uiAddLabelError) setUiAddLabelError(''); }}
+                onKeyDown={stopPropagation} 
+                className={`${styles.formInput} ${uiAddLabelError && !newLabelKey ? styles.formInputError : ''}`}
               />
             </div>
-            <button onClick={handleAddLabel} style={{ ...commonButtonStyle, backgroundColor: '#28a745', width: '100%' }}>
+            <button onClick={handleAddLabel} className={`${styles.buttonBase} ${styles.buttonSuccess}`} style={{ width: '100%' }}>
               Add Label
             </button>
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };
 
