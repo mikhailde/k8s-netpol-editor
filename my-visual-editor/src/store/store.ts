@@ -38,7 +38,6 @@ export const useAppStore: AppStoreType = create<AppState>((set, get) => {
 
     if (!isEqual(currentValidationErrors, newErrors)) { 
       set({ validationErrors: newErrors });
-    } else {
     }
   };
 
