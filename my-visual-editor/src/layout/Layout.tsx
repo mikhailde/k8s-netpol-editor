@@ -1,21 +1,26 @@
 import React from 'react';
+import { ReactFlowProvider } from 'reactflow';
 import Canvas from '../components/Canvas/Canvas';
+import Palette from '../components/Palette/Palette';
 import './Layout.css';
 
 const Layout: React.FC = () => {
   return (
     <div className="layout-container">
-      <div className="layout-palette">
-        <h2>Palette</h2>
-      </div>
+      <Palette />
+
       <div className="layout-main-area">
-        <div className="layout-canvas">
-          <Canvas />
-        </div>
+        <ReactFlowProvider>
+          <div className="layout-canvas">
+            <Canvas />
+          </div>
+        </ReactFlowProvider>
+
         <div className="layout-inspector">
           <h2>Inspector</h2>
         </div>
       </div>
+
       <div className="layout-output">
         <h2>Output</h2>
       </div>
