@@ -1,0 +1,44 @@
+.layout-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.layout-palette {
+  width: 200px;
+  background-color: #f0f0f0;
+  border-right: 1px solid #ccc;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.layout-main-area {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-canvas {
+  flex-grow: 1;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.layout-inspector {
+  height: 200px;
+  background-color: #e0e0e0;
+  border-top: 1px solid #ccc;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.layout-output {
+  width: 200px;
+  background-color: #f0f0f0;
+  border-left: 1px solid #ccc;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 10px;
+}
