@@ -1,7 +1,7 @@
 import React from 'react';
-import { ReactFlowProvider } from 'reactflow';
-import Canvas from '../features/Canvas/Canvas';
+import CanvasWrapper from '../features/Canvas/Canvas';
 import Palette from '../features/Palette/Palette';
+import InspectorView from '../features/Inspector/InspectorView';
 import './Layout.css';
 
 const Layout: React.FC = () => {
@@ -9,20 +9,12 @@ const Layout: React.FC = () => {
     <div className="layout-container">
       <Palette />
 
-      <div className="layout-main-area">
-        <ReactFlowProvider>
-          <div className="layout-canvas">
-            <Canvas />
-          </div>
-        </ReactFlowProvider>
-
-        <div className="layout-inspector">
-          <h2>Inspector</h2>
-        </div>
+      <div className="canvas-container">
+        <CanvasWrapper />
       </div>
 
-      <div className="layout-output">
-        <h2>Output</h2>
+      <div className="inspector-container">
+        <InspectorView />
       </div>
     </div>
   );
