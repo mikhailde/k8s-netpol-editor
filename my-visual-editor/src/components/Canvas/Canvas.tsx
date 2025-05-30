@@ -15,14 +15,17 @@ import ReactFlow, {
 
 import 'reactflow/dist/style.css';
 
-import CustomNodeNamespace from '../nodes/CustomNodeNamespace';
+import CustomNodeNamespace, { CustomNodeNamespaceData } from '../nodes/CustomNodeNamespace';
+import { useAppStore } from '../../store/store';
 
 const nodeTypes = {
   namespace: CustomNodeNamespace,
 };
 
-let id = 0;
-const getId = () => `dndnode_${id++}`;
+type AppNodeType = keyof typeof nodeTypes;
+
+let idCounter = 0;
+const getId = () => `dndnode_${idCounter++}`;
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -32,8 +35,9 @@ const Canvas: React.FC = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const { screenToFlowPosition } = useReactFlow(); 
 
-  const { project } = useReactFlow();
+  const addNodeToStore = useAppStore((state) => state.addNode);
 
   const onConnect = useCallback(
     (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
@@ -49,28 +53,42 @@ const Canvas: React.FC = () => {
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const type = event.dataTransfer.getData('application/reactflow');
+      const draggedType = event.dataTransfer.getData('application/reactflow');
 
-      if (typeof type === 'undefined' || !type || type !== 'namespace') {
+      if (!draggedType) {
+        console.warn('No type data found in drag event.');
         return;
       }
 
-      const reactFlowBounds = reactFlowWrapper.current!.getBoundingClientRect();
-      const position = project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
+      const nodeType = draggedType as AppNodeType;
+
+      if (!nodeTypes[nodeType]) {
+        console.warn(`Dropped node type "${draggedType}" is not defined in nodeTypes.`);
+        return;
+      }
+      
+      if (!reactFlowWrapper.current) {
+        console.error("ReactFlow wrapper ref is not available.");
+        return;
+      }
+
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
       });
 
-      const newNode: Node = {
+      const newNode: Node<CustomNodeNamespaceData> = {
         id: getId(),
-        type,
+        type: nodeType,
         position,
-        data: { label: `${type} node` },
+        data: { label: `${nodeType} node` },
       };
 
-      setNodes((nds) => nds.concat(newNode));
+      setNodes((currentNodes) => currentNodes.concat(newNode));
+      
+      addNodeToStore(newNode);
     },
-    [project, setNodes],
+    [screenToFlowPosition, setNodes, addNodeToStore],
   );
 
   return (
@@ -84,7 +102,9 @@ const Canvas: React.FC = () => {
         onDragOver={onDragOver}
         onDrop={onDrop}
         nodeTypes={nodeTypes}
-        fitView>
+        fitView
+        deleteKeyCode={['Backspace', 'Delete']}
+      >
         <Controls />
         <MiniMap />
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
