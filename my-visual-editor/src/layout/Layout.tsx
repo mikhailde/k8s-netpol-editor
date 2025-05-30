@@ -1,7 +1,7 @@
 import React from 'react';
 import { ReactFlowProvider } from 'reactflow';
-import Canvas from '../components/Canvas/Canvas';
-import Palette from '../components/Palette/Palette';
+import Canvas from '../features/Canvas/Canvas';
+import Palette from '../features/Palette/Palette';
 import './Layout.css';
 
 const Layout: React.FC = () => {
