@@ -1,68 +1,93 @@
 .nodeBase {
-  background-color: #e6f7ff;
-  border: 2px solid #1890ff;
-  border-radius: 5px;
-  padding: 25px;
-  min-width: 250px;
-  min-height: 150px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  box-shadow: none;
-  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  width: 100%; height: 100%; box-sizing: border-box; position: relative;
+  border: 2px solid var(--color-border-namespace, #91d5ff);
+  border-radius: 8px; 
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: var(--spacing-unit, 8px);
+  color: var(--color-text-namespace, #004a8c);
+  cursor: grab; overflow: hidden;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
+.nodeBase::before {
+  content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: var(--color-background-namespace, #e9f7fe);
+  border-radius: inherit;
+  z-index: -1;
+  transition: background-color 0.15s ease-in-out;
+}
+
+/* --- Контент --- */
+.nodeLabel, .hintText, .statusContainer {
+  position: relative; z-index: 1;
+  width: 100%; text-align: center; word-break: break-word;
+}
 .nodeLabel {
-  font-weight: 500;
-  margin-bottom: 8px;
+  font-weight: 600; font-size: 1.05em;
+  margin-top: calc(var(--spacing-unit, 8px) * 0.5);
+  margin-bottom: var(--spacing-unit, 8px);
+  flex-shrink: 0;
 }
-
-.statusTextBase {
-  font-size: 0.8em;
-  margin-top: 4px;
-}
-
-.errorText {
-  composes: statusTextBase;
-  color: red;
-  font-weight: bold;
-}
-
-.warningText {
-  composes: statusTextBase;
-  color: orange;
-  font-weight: bold;
-}
-
 .hintText {
-  margin-top: 15px;
-  color: #777;
-  font-size: 0.85em;
-  font-style: italic;
+  color: var(--color-text-namespace-hint, #5089b3); font-size: 0.8em; font-style: italic;
+  flex-grow: 1; display: flex; align-items: center; justify-content: center; min-height: 20px;
 }
-
-.warningState {
-  border-color: orange;
-  box-shadow: 0 0 8px rgba(255, 165, 0, 0.5);
+.statusContainer {
+  margin-bottom: calc(var(--spacing-unit, 8px) * 0.5); flex-shrink: 0;
 }
+.errorText { font-size: 0.8em; font-weight: 500; color: var(--color-error-dark, #b31d1a); }
+.warningText { font-size: 0.8em; font-weight: 500; color: var(--color-warning-darker, #946300); }
 
+/* --- Состояния узла (применяются к .nodeBase) --- */
 .selectedState {
-  border-color: #ff007f;
-  box-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
+  border-color: var(--color-accent, #007AFF) !important;
+  box-shadow: 0 0 0 2px var(--color-accent, #007AFF), 0 0 8px rgba(0, 122, 255, 0.5) !important;
 }
 
-.errorState {
-  border-color: red;
-  box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
-}
-
-.selectedState.warningState {
-  box-shadow: 0 0 8px rgba(255, 165, 0, 0.7);
-}
-
+.errorState::before { background-color: var(--color-background-namespace-error, #ffebee) !important; }
+.nodeBase.errorState { border-color: var(--color-error, #d73a49) !important; }
 .selectedState.errorState {
-  box-shadow: 0 0 8px rgba(255, 0, 0, 0.7);
+  border-color: var(--color-error, #d73a49) !important;
+  box-shadow: 0 0 0 2px var(--color-error, #d73a49), 0 0 8px rgba(215, 58, 73, 0.5) !important;
+}
+
+.warningState::before { background-color: var(--color-background-namespace-warning, #fff9e6) !important; }
+.nodeBase.warningState { border-color: var(--color-warning, #DBAB09) !important; }
+.selectedState.warningState {
+  border-color: var(--color-warning, #DBAB09) !important;
+  box-shadow: 0 0 0 2px var(--color-warning, #DBAB09), 0 0 8px rgba(219, 171, 9, 0.5) !important;
+}
+
+/* --- Стили для фокуса (применяются к внешней обертке React Flow) --- */
+
+:global(div.react-flow__node-namespace.selectable:focus:not(:focus-visible)) {
+  outline: none !important;
+}
+
+:global(div.react-flow__node-namespace.selectable:focus-visible) {
+  outline: 3px solid var(--color-focus-ring, #0b5ed7) !important;
+  outline-offset: 2px !important;
+}
+
+:global(div.react-flow__node-namespace.selectable.selected:focus-visible) {
+  outline: 3px solid var(--color-focus-ring-selected, #581c87) !important;
+  outline-offset: 2px !important;
+}
+
+/* --- Стили для Хэндлов --- */
+.nodeBase :global(.react-flow__handle) {
+  width: 10px !important; height: 10px !important;
+  background: var(--color-handle-namespace, #0050b3) !important;
+  border: 1px solid var(--color-handle-namespace-border, #003366) !important; 
+  border-radius: 50%; box-shadow: 0 0 2px rgba(0,0,0,0.3);
+  z-index: 10 !important;
+}
+.nodeBase :global(.react-flow__handle-top),
+.nodeBase :global(.react-flow__handle-bottom) {
+  left: 50% !important; transform: translateX(-50%) !important;
+}
+.nodeBase :global(.react-flow__handle-left),
+.nodeBase :global(.react-flow__handle-right) {
+  top: 50% !important; transform: translateY(-50%) !important;
 }

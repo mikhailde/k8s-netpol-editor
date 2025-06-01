@@ -29,6 +29,7 @@ export interface PodGroupNodeData {
 
 export interface NamespaceNodeData {
   label?: string;
+  hasChildren?: boolean;
 }
 
 export type CustomNodeData = PodGroupNodeData | NamespaceNodeData;

@@ -1,5 +1,6 @@
 import React from 'react';
-import CanvasWrapper from '../features/Canvas/Canvas';
+import { ReactFlowProvider } from 'reactflow';
+import CanvasComponent from '../features/Canvas/Canvas';
 import Palette from '../features/Palette/Palette';
 import InspectorView from '../features/Inspector/InspectorView';
 import OutputView from '../features/OutputView/OutputView';
@@ -17,24 +18,26 @@ const EdgeCounterDisplay: React.FC = () => {
 
 const Layout: React.FC = () => {
   return (
-    <div className="layout-container">
-      <EdgeCounterDisplay />
-      
-      <Palette /> 
+    <ReactFlowProvider>
+      <div className="layout-container">
+        <EdgeCounterDisplay />
+        
+        <Palette /> 
 
-      <div className="canvas-container">
-        <CanvasWrapper />
-      </div>
+        <div className="canvas-container">
+          <CanvasComponent />
+        </div>
 
-      <div className="inspector-container">
-        <div className="inspector-panel">
-          <InspectorView />
-        </div>
-        <div className="output-panel">
-          <OutputView />
+        <div className="inspector-container">
+          <div className="inspector-panel">
+            <InspectorView />
+          </div>
+          <div className="output-panel">
+            <OutputView />
+          </div>
         </div>
       </div>
-    </div>
+    </ReactFlowProvider>
   );
 };
 
