@@ -78,13 +78,15 @@
 .selectedState {
   /* --- Стиль для выделенного узла --- */
   border-color: var(--color-accent, #007AFF) !important;
-  background-color: var(--color-background-node-selected, var(--color-background-node));
+
+  background-color: var(--color-background-selected-neutral, #f5f7fa) !important; 
+
   box-shadow: 0 0 0 2px var(--color-accent-semitransparent, rgba(0, 122, 255, 0.35)), 
               var(--shadow-node-selected, 0 4px 12px rgba(0,0,0,0.1)) !important;
 }
+
 .selectedState .nodeLabel {
 }
-
 
 .errorState {
   /* --- Стиль для узла с ошибкой --- */
