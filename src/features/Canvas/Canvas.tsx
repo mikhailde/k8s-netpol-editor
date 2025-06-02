@@ -184,16 +184,20 @@ const CanvasComponent: React.FC = () => {
       parentId = parentNode.id;
       const targetCenterX = position.x - parentNode.positionAbsolute.x;
       const targetCenterY = position.y - parentNode.positionAbsolute.y;
+      const MIN_Y_INSIDE_NAMESPACE = NAMESPACE_INITIAL_PADDING; // Или более специфичное значение, если нужно
       relativePos = {
-          x: targetCenterX - PODGROUP_DEFAULT_WIDTH / 2, y: targetCenterY - PODGROUP_DEFAULT_HEIGHT / 2,
+          x: targetCenterX - PODGROUP_DEFAULT_WIDTH / 2,
+          y: targetCenterY - PODGROUP_DEFAULT_HEIGHT / 2,
       };
       relativePos.x = Math.max(relativePos.x, NAMESPACE_INITIAL_PADDING);
-      relativePos.y = Math.max(relativePos.y, NAMESPACE_INITIAL_PADDING);
+      relativePos.y = Math.max(relativePos.y, MIN_Y_INSIDE_NAMESPACE); // << Убедитесь, что эта строка есть и MIN_Y_INSIDE_NAMESPACE достаточно большой
+
       if (parentNode.width && parentNode.height) {
           relativePos.x = Math.min(relativePos.x, parentNode.width - PODGROUP_DEFAULT_WIDTH - NAMESPACE_INITIAL_PADDING);
+          // И здесь для Y, чтобы PodGroup не вылезал за нижнюю границу с учетом паддинга
           relativePos.y = Math.min(relativePos.y, parentNode.height - PODGROUP_DEFAULT_HEIGHT - NAMESPACE_INITIAL_PADDING);
-          relativePos.x = Math.max(relativePos.x, NAMESPACE_INITIAL_PADDING);
-          relativePos.y = Math.max(relativePos.y, NAMESPACE_INITIAL_PADDING);
+          // Повторно ограничиваем, если после min он стал меньше минимального (маловероятно, но для надежности)
+          relativePos.y = Math.max(relativePos.y, MIN_Y_INSIDE_NAMESPACE); 
       }
       const pgData: PodGroupNodeData = { label: defaultName, labels: {}, metadata: { name: defaultName, namespace: parentNode.data?.label || '' }, policyConfig: { defaultDenyIngress: false, defaultDenyEgress: false } };
       nodeToAdd = { id: newNodeId, type, position: relativePos, data: pgData, parentNode: parentId, width: PODGROUP_DEFAULT_WIDTH, height: PODGROUP_DEFAULT_HEIGHT, zIndex: 2000 };

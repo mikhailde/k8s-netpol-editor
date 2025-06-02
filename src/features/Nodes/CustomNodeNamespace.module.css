@@ -25,10 +25,9 @@
 }
 .nodeLabel {
   font-weight: 600; font-size: 1.05em;
-  margin-top: calc(var(--spacing-unit, 8px) * 0.5);
+  margin-top: calc(var(--spacing-unit, 8px) * 0.25);
   margin-bottom: calc(var(--spacing-unit, 8px) * 1.5);
   flex-shrink: 0;
-  padding: calc(var(--spacing-unit) * 0.5) var(--spacing-unit);
 }
 .hintText {
   color: var(--color-text-namespace-hint, #5089b3); font-size: 0.8em; font-style: italic;
