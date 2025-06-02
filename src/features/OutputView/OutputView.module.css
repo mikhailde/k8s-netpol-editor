@@ -12,7 +12,7 @@
   margin-bottom: 0;
 }
 
-/* --- Контейнер для кнопок управления (Сгенерировать, Скачать) --- */
+/* --- Контейнер для кнопок управления --- */
 .controls {
   display: flex;
   align-items: center;
@@ -29,68 +29,83 @@
   composes: buttonSecondary from '../Inspector/InspectorView.module.css';
 }
 
-/* --- Обертка для блока вывода YAML (SyntaxHighlighter) --- */
+/* --- Обертка для блока вывода YAML --- */
 .outputPreWrapper {
   flex-grow: 1;
   min-height: 0;
-  border-radius: 6px;
+  border-radius: var(--border-radius-medium, 6px);
   overflow: auto;
   position: relative;
   border: 1px solid var(--color-border-medium);
-  background-color: var(--color-background-panel, #f6f8fa); 
+  background-color: var(--color-background-panel);
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.outputPreWrapper:not(.placeholderActive) {
+.outputPreWrapper.hasContent {
   background-color: #2d2d2d;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
-.outputPreWrapper pre {
-  margin: 0 !important;
-  padding: calc(var(--spacing-unit) * 2) !important;
-  background-color: inherit !important;
+/* --- Кастомный плейсхолдер, когда yamlOutput пуст --- */
+.outputPlaceholderContent {
+  padding: calc(var(--spacing-unit) * 3);
+  text-align: center;
+  color: var(--color-text-placeholder);
+  font-size: 0.9em;
+  font-style: italic;
+  user-select: none;
+  max-width: 85%;
+}
+.outputPlaceholderContent p {
+  margin: 0;
+  line-height: 1.5;
 }
 
-.outputPreWrapper code {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace !important;
-  font-size: 0.85em !important;
-  line-height: 1.5 !important;
-  white-space: pre-wrap !important;
-  word-break: break-all !important;
-}
 
+/* --- Кнопка "Копировать" --- */
 .copyButtonAbsolute {
   composes: buttonSecondary from '../Inspector/InspectorView.module.css';
   position: absolute;
-  top: var(--spacing-unit);
-  right: var(--spacing-unit);
+  top: calc(var(--spacing-unit) * 1);
+  right: calc(var(--spacing-unit) * 1);
   z-index: 10;
   
-  background-color: rgba(80, 80, 80, 0.85);
-  border-color: rgba(100, 100, 100, 0.85);
+  background-color: rgba(70, 70, 70, 0.85);
+  border-color: rgba(90, 90, 90, 0.85);
   color: #e0e0e0;
 
   display: inline-flex; 
   align-items: center;
   gap: calc(var(--spacing-unit) * 0.75);
-  padding: calc(var(--spacing-unit) * 0.6) var(--spacing-unit);
+  padding: calc(var(--spacing-unit) * 0.7) calc(var(--spacing-unit) * 1.2);
   font-size: 0.85em;
 }
 
 .copyButtonAbsolute:hover:not(:disabled) {
-  background-color: rgba(100, 100, 100, 0.9);
-  border-color: rgba(120, 120, 120, 0.9);
+  background-color: rgba(90, 90, 90, 0.9);
+  border-color: rgba(110, 110, 110, 0.9);
   color: #f5f5f5;
 }
 
 .copyButtonAbsolute:focus-visible {
   outline: 2px solid var(--color-focus-on-dark, #79c0ff);
   outline-offset: 1px;
-  box-shadow: 0 0 0 1px var(--color-background-dark, #2d2d2d);
+  box-shadow: 0 0 0 1px var(--color-background-codeblock, #2d2d2d);
 }
 
-/* --- Иконка для кнопки "Копировать" --- */
 .copyButtonAbsolute svg.copyIcon {
   width: 1.1em;
   height: 1.1em;
   vertical-align: middle;
+}
+
+.outputPreWrapper.hasContent pre,
+.outputPreWrapper.hasContent code {
+  height: 100%;
+  box-sizing: border-box;
+  background-color: transparent !important;
 }

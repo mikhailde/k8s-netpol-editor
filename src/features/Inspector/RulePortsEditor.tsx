@@ -1,137 +1,183 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { isEqual } from 'lodash';
 import { PortProtocolEntry, IValidationError } from '../../types';
 import styles from '../Inspector/InspectorView.module.css';
 
+// --- Константы Валидации (специфичные для этого компонента UI) ---
+const MAX_PORT_NAME_LENGTH_UI = 63;
+const DNS_1123_REGEX_FOR_NAMED_PORT_UI = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
+
+// --- UI-валидация для поля порта (только для немедленного фидбека в UI) ---
+const uiValidatePortValue = (portValue: string): string | null => {
+  const trimmedPort = portValue.trim();
+  if (!trimmedPort) return 'Порт не может быть пустым.';
+  if (trimmedPort.toLowerCase() === 'any') return null;
+
+  if (/^\d+$/.test(trimmedPort)) {
+    const num = parseInt(trimmedPort, 10);
+    return (num >= 1 && num <= 65535) ? null : 'Порт должен быть числом от 1 до 65535.';
+  }
+  
+  if (trimmedPort.length <= MAX_PORT_NAME_LENGTH_UI && DNS_1123_REGEX_FOR_NAMED_PORT_UI.test(trimmedPort)) {
+    return null;
+  }
+
+  if (/^\d+-\d+$/.test(trimmedPort)) { 
+    return null; 
+  }
+
+  return `Неверный формат: число (1-65535), имя (DNS-1123, до ${MAX_PORT_NAME_LENGTH_UI} симв.) или "any".`;
+};
+
 interface RulePortsEditorProps {
   ports: PortProtocolEntry[];
-  onChange: (updatedPorts: PortProtocolEntry[]) => void;
+  onChange: (data: { ports: PortProtocolEntry[]; allUiPortsValid: boolean }) => void;
   issues: IValidationError[];
 }
 
-const uiValidatePort = (port: string): string | null => {
-  if (!port.trim()) return 'Порт не может быть пустым.';
-  if (port.toLowerCase() === 'any') return null;
-  if (/^\d+$/.test(port)) {
-    const num = parseInt(port, 10);
-    if (num >= 1 && num <= 65535) return null;
-    return 'Порт должен быть числом от 1 до 65535.';
-  }
-  if (/^\d+-\d+$/.test(port)) { 
-    const [startStr, endStr] = port.split('-');
-    const start = parseInt(startStr, 10);
-    const end = parseInt(endStr, 10);
-    if (!isNaN(start) && !isNaN(end) && start >= 1 && start <= 65535 && end >= 1 && end <= 65535 && start <= end) {
-      return null; 
-    }
-    return 'Неверный диапазон (1-65535, start <= end).';
-  }
-  if (/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(port) && port.length <= 63) {
-      return null;
-  }
-  return 'Неверный формат (число, диапазон, имя или "any").';
-};
-
-
-const RulePortsEditor: React.FC<RulePortsEditorProps> = ({ ports = [], onChange, issues }) => {
-  const [uiInputErrors, setUiInputErrors] = useState<Record<string, string | null>>({});
+const RulePortsEditor: React.FC<RulePortsEditorProps> = ({ ports, onChange, issues }) => {
+  const [uiLocalErrors, setUiLocalErrors] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
-    const initialInputErrors: Record<string, string | null> = {};
+    const newUiErrors: Record<string, string | null> = {};
     ports.forEach(entry => {
-      initialInputErrors[entry.id] = uiValidatePort(entry.port);
+      const serviceIssueForPort = issues.find(
+        iss => iss.elementId === entry.id || iss.fieldKey === `ports[${entry.id}].port`
+      );
+      if (!serviceIssueForPort) {
+        newUiErrors[entry.id] = uiValidatePortValue(entry.port);
+      } else {
+        newUiErrors[entry.id] = null;
+      }
     });
-    setUiInputErrors(initialInputErrors);
-  }, [ports]);
+    if (!isEqual(uiLocalErrors, newUiErrors)) {
+      setUiLocalErrors(newUiErrors);
+    }
+  }, [ports, issues, uiLocalErrors]);
 
-  const handleAddPortProtocol = () => {
-    const newEntry: PortProtocolEntry = {
-      id: uuidv4(),
-      port: '',
-      protocol: 'TCP',
-    };
-    const updatedPorts = [...ports, newEntry];
-    setUiInputErrors(prev => ({ ...prev, [newEntry.id]: uiValidatePort('') }));
-    onChange(updatedPorts);
-  };
+  const handleChangeAndTriggerParent = useCallback((updatedPorts: PortProtocolEntry[]) => {
+    const currentLocalUiErrors: Record<string, string | null> = {};
+    let allCurrentlyUiValid = true;
 
-  const handlePortChange = (id: string, newPortValue: string) => {
-    const updatedPorts = ports.map((entry) =>
-      entry.id === id ? { ...entry, port: newPortValue } : entry
-    );
-    console.log('[RulePortsEditor] handlePortChange, calling onChange with:', JSON.stringify(updatedPorts));
-    onChange(updatedPorts);
-  };
-
-  const handleProtocolChange = (id: string, newProtocol: PortProtocolEntry['protocol']) => {
-    const updatedPorts = ports.map((entry) =>
-      entry.id === id ? { ...entry, protocol: newProtocol } : entry
-    );
-    onChange(updatedPorts);
-  };
-
-  const handleRemovePortProtocol = (id: string) => {
-    const updatedPorts = ports.filter((entry) => entry.id !== id);
-    setUiInputErrors(prevErrors => {
-      const newErrors = { ...prevErrors };
-      delete newErrors[id];
-      return newErrors;
+    updatedPorts.forEach(p => {
+      const portError = uiValidatePortValue(p.port);
+      currentLocalUiErrors[p.id] = portError;
+      if (portError) {
+        allCurrentlyUiValid = false;
+      }
     });
-    onChange(updatedPorts);
-  };
+    
+    setUiLocalErrors(currentLocalUiErrors); 
+    onChange({ ports: updatedPorts, allUiPortsValid: allCurrentlyUiValid });
+  }, [onChange]);
 
-  const stopPropagation = (e: React.KeyboardEvent | React.ChangeEvent<HTMLSelectElement>) => { 
+
+  const handleAddPort = useCallback(() => {
+    const newEntry: PortProtocolEntry = { id: uuidv4(), port: '', protocol: 'TCP' };
+    handleChangeAndTriggerParent([...ports, newEntry]);
+  }, [ports, handleChangeAndTriggerParent]);
+
+  const handleRemovePort = useCallback((idToRemove: string) => {
+    handleChangeAndTriggerParent(ports.filter(p => p.id !== idToRemove));
+  }, [ports, handleChangeAndTriggerParent]);
+
+  const handlePortValueChange = useCallback((id: string, newPortValue: string) => {
+    const updatedPorts = ports.map(p => p.id === id ? { ...p, port: newPortValue } : p);
+    
+    const newPortError = uiValidatePortValue(newPortValue);
+    setUiLocalErrors(prev => ({...prev, [id]: newPortError}));
+    
+    let allUiCurrentlyValid = !newPortError;
+    if (allUiCurrentlyValid) {
+      allUiCurrentlyValid = updatedPorts.every(p => p.id === id || !uiValidatePortValue(p.port));
+    }
+    
+    onChange({ 
+        ports: updatedPorts, 
+        allUiPortsValid: allUiCurrentlyValid
+    });
+  }, [ports, onChange]);
+
+  const handleProtocolValueChange = useCallback((id: string, newProtocol: PortProtocolEntry['protocol']) => {
+    const updatedPorts = ports.map(p => p.id === id ? { ...p, protocol: newProtocol } : p);
+    handleChangeAndTriggerParent(updatedPorts);
+  }, [ports, handleChangeAndTriggerParent]);
+
+  const stopPropagation = useCallback((e: React.SyntheticEvent) => {
     e.stopPropagation();
-  };
+  }, []);
   
+  const portEntriesToRender = useMemo(() => ports.map((entry, index) => {
+    const serviceIssue = issues.find(
+      iss => iss.elementId === entry.id || iss.fieldKey === `ports[${entry.id}].port`
+    );
+    const displayError = serviceIssue?.message || uiLocalErrors[entry.id];
+
+    return (
+      <div key={entry.id} className={styles.portProtocolEntry}>
+        <div className={styles.portInputWrapper}>
+          <input
+            type="text"
+            placeholder="Порт (80, any, имя)"
+            value={entry.port}
+            onChange={(e) => handlePortValueChange(entry.id, e.target.value)}
+            onKeyDown={stopPropagation}
+            className={`${styles.formInput} ${displayError ? styles.formInputError : ''}`}
+            aria-label={`Порт ${index + 1}`}
+            aria-describedby={displayError ? `port-error-${entry.id}` : undefined}
+            aria-invalid={!!displayError}
+          />
+          {displayError && (
+            <span id={`port-error-${entry.id}`} className={styles.errorMessage}>
+              {displayError}
+            </span>
+          )}
+        </div>
+        <select
+          value={entry.protocol}
+          onChange={(e) => { 
+            stopPropagation(e);
+            handleProtocolValueChange(entry.id, e.target.value as PortProtocolEntry['protocol']);
+          }}
+          onKeyDown={stopPropagation}
+          className={`${styles.formInput} ${styles.protocolSelect}`}
+          aria-label={`Протокол для порта ${index + 1}`}
+        >
+          <option value="TCP">TCP</option>
+          <option value="UDP">UDP</option>
+          <option value="SCTP">SCTP</option>
+          <option value="ICMP">ICMP (порт игнорируется)</option>
+          <option value="ANY">ANY (порт и протокол)</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => handleRemovePort(entry.id)}
+          className={`${styles.buttonBase} ${styles.buttonDanger} ${styles.buttonSmall}`}
+          title="Удалить порт/протокол"
+          aria-label={`Удалить порт ${index + 1}`}
+        >
+          Удалить
+        </button>
+      </div>
+    );
+  }), [ports, issues, uiLocalErrors, handlePortValueChange, handleProtocolValueChange, handleRemovePort, stopPropagation]);
+
+
   return (
     <div className={styles.rulePortsEditorContainer}>
-      {ports.map((entry) => {
-        const servicePortError = issues.find(iss => iss.fieldKey === `ports[${entry.id}].port`)?.message;
-        const inputPortError = uiInputErrors[entry.id];
-        const displayPortError = servicePortError || inputPortError;
+      {ports.length === 0 && (
+        <div className={styles.infoMessage}>
+          Порты не определены. Правило разрешит весь трафик (все порты, все протоколы) для указанного peer.
+        </div>
+      )}
 
-        return (
-          <div key={entry.id} className={styles.portProtocolEntry}>
-            <div className={styles.portInputWrapper}>
-              <input
-                type="text"
-                placeholder="Порт (80, any, named-port)"
-                value={entry.port}
-                onChange={(e) => handlePortChange(entry.id, e.target.value)}
-                onKeyDown={stopPropagation}
-                className={`${styles.formInput} ${displayPortError ? styles.formInputError : ''}`}
-              />
-              {displayPortError && <span className={styles.errorMessage}>{displayPortError}</span>}
-            </div>
-            <select
-              value={entry.protocol}
-              onChange={(e) => { stopPropagation(e); handleProtocolChange(entry.id, e.target.value as PortProtocolEntry['protocol'])}}
-              className={`${styles.formInput} ${styles.protocolSelect}`}
-            >
-              <option value="TCP">TCP</option>
-              <option value="UDP">UDP</option>
-              <option value="SCTP">SCTP</option>
-              <option value="ICMP">ICMP</option>
-              <option value="ANY">ANY</option>
-            </select>
-            {}
-            <button
-              type="button"
-              onClick={() => handleRemovePortProtocol(entry.id)}
-              className={`${styles.buttonBase} ${styles.buttonDanger} ${styles.buttonSmall}`}
-              title="Удалить порт/протокол"
-            >
-              Удалить
-            </button>
-          </div>
-        );
-      })}
-      <button 
+      {portEntriesToRender}
+      
+      <button
         type="button"
-        onClick={handleAddPortProtocol} 
-        className={`${styles.buttonBase} ${styles.buttonSecondary}`}
-        style={{ width: '100%', marginTop: 'var(--spacing-unit)' }}
+        onClick={handleAddPort}
+        className={`${styles.buttonBase} ${styles.buttonSecondary} ${styles.buttonSmall} ${styles.buttonBlockWithMargin}`}
       >
         Добавить порт/протокол
       </button>
@@ -139,4 +185,4 @@ const RulePortsEditor: React.FC<RulePortsEditorProps> = ({ ports = [], onChange,
   );
 };
 
-export default RulePortsEditor;
+export default memo(RulePortsEditor);

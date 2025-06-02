@@ -1,55 +1,105 @@
 .palettePanel {
-  padding: calc(var(--spacing-unit) * 2);
+  /* --- Контейнер всей палитры --- */
+  padding: calc(var(--spacing-unit) * 1.5) calc(var(--spacing-unit) * 1.5);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--spacing-unit) * 2);
+  gap: calc(var(--spacing-unit) * 1.5);
+  background-color: var(--color-background-sidebar, var(--color-background-app));
+  border-right: 1px solid var(--color-border-light);
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.paletteHeader {
+  /* --- Общий заголовок для палитры, если он нужен --- */
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  padding-bottom: var(--spacing-unit);
+  margin-bottom: var(--spacing-unit);
+  border-bottom: 1px solid var(--color-border-light);
+  flex-shrink: 0;
 }
 
 .description {
-  font-size: 0.9em;
+  /* --- Текст-подсказка --- */
+  font-size: 0.85em;
   color: var(--color-text-secondary);
-  padding-bottom: var(--spacing-unit);
-  border-bottom: 1px solid var(--color-border-light);
-  margin-bottom: var(--spacing-unit);
+  padding: 0 calc(var(--spacing-unit) * 0.5);
+  margin-bottom: calc(var(--spacing-unit) * 0.5);
+  text-align: left;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.elementsList {
+    /* --- Опциональный контейнер для списка элементов, если их нужно группировать --- */
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-unit);
 }
 
 .dndNode {
-  padding: var(--spacing-unit) calc(var(--spacing-unit) * 1.5);
-  background-color: #ffffff;
-  border: 1px solid var(--color-border-medium);
-  border-radius: 6px;
-  cursor: grab;
-  text-align: center;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+  /* --- Стиль для перетаскиваемого элемента палитры --- */
   display: flex;
   align-items: center;
-  gap: var(--spacing-unit);
+  gap: calc(var(--spacing-unit) * 1.25);
+  
+  padding: calc(var(--spacing-unit) * 1.25) calc(var(--spacing-unit) * 1.5);
+  
+  background-color: var(--color-background-panel);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-large, 8px);
+  
+  color: var(--color-text-primary);
+  font-weight: 500;
+  font-size: 0.95em;
+  text-align: left;
+  
+  cursor: grab;
+  user-select: none;
+  
+  box-shadow: var(--shadow-xs, 0 1px 2px rgba(0,0,0,0.04));
+  
+  transition-property: background-color, border-color, box-shadow, transform;
+  transition-duration: 0.15s;
+  transition-timing-function: ease-in-out;
 }
 
 .dndNode:hover {
-  background-color: #f0f4f8;
-  border-color: #adb5bd;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+  background-color: var(--color-background-panel-hover, #f7f9fc);
+  border-color: var(--color-border-accent-light, var(--color-accent));
+  box-shadow: var(--shadow-sm, 0 2px 4px rgba(0,0,0,0.06));
   transform: translateY(-1px);
+}
+
+.dndNode:focus-visible {
+  outline: 2px solid var(--color-focus-ring, #007AFF);
+  outline-offset: 2px;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-sm, 0 2px 4px rgba(0,0,0,0.06)), 0 0 0 2px var(--color-focus-ring-semitransparent, rgba(0,122,255,0.2));
 }
 
 .dndNode:active {
   cursor: grabbing;
-  background-color: #e0e9f2;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  background-color: var(--color-background-panel-active, #eff3f7);
+  box-shadow: var(--shadow-inset, inset 0 1px 2px rgba(0,0,0,0.05));
   transform: translateY(0px);
+  border-color: var(--color-accent);
 }
 
 .nodeIcon {
-  width: 18px;
-  height: 18px;
+  /* --- Стиль для иконки внутри .dndNode --- */
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--color-accent);
+  opacity: 0.9;
 }
 
-.dndNodeNamespace {
+.dndNodeNamespace .nodeIcon {
 }
 
-.dndNodePodGroup {
+.dndNodePodGroup .nodeIcon {
 }

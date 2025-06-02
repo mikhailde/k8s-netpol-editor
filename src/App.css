@@ -27,3 +27,11 @@ body {
 .react-flow__edgelabel-renderer {
   z-index: 3 !important;
 }
+
+:global(.react-flow__node.selected > .react-flow__node-podgroup) {
+  z-index: 1001 !important;
+}
+
+:global(.react-flow__node.selected > .react-flow__node) {
+  z-index: 1001 !important; 
+}
