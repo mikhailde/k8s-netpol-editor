@@ -153,7 +153,6 @@ const OutputView: React.FC = () => {
           onClick={handleGenerateYaml} 
           className={styles.generateButton}
           disabled={isGenerateButtonDisabled}
-          aria-label={generateButtonText}
         >
           {generateButtonText}
         </button>
@@ -170,7 +169,8 @@ const OutputView: React.FC = () => {
 
       <div 
         className={`${styles.outputPreWrapper} ${!isActualYaml ? styles.placeholderActive : ''}`}
-        tabIndex={-1}
+        aria-live="polite"
+        aria-atomic="true"
       >
         {isActualYaml && (
            <button 

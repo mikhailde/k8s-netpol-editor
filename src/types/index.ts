@@ -38,15 +38,24 @@ export function isPodGroupNodeData(data: unknown): data is PodGroupNodeData {
   if (typeof data !== 'object' || data === null) {
     return false;
   }
-  const d = data as Partial<PodGroupNodeData>;
+  const d = data as PodGroupNodeData;
   return (
     typeof d.metadata === 'object' && d.metadata !== null &&
     typeof d.metadata.name === 'string' &&
-    typeof d.metadata.namespace === 'string' &&
     typeof d.policyConfig === 'object' && d.policyConfig !== null &&
     typeof d.policyConfig.defaultDenyIngress === 'boolean' &&
     typeof d.policyConfig.defaultDenyEgress === 'boolean' &&
     (typeof d.labels === 'object' && d.labels !== null)
+  );
+}
+
+export function isNamespaceNodeData(data: unknown): data is NamespaceNodeData {
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
+  const d = data as NamespaceNodeData;
+  return (
+    typeof d.label === 'string'
   );
 }
 

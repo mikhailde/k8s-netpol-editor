@@ -1,11 +1,12 @@
-import React, { CSSProperties } from 'react';
+import React, { memo, CSSProperties } from 'react';
 import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge } from 'reactflow';
 import { useAppStore } from '../../store/store';
 import styles from './CustomRuleEdge.module.css';
+import { PortProtocolEntry } from '../../types';
 
 const CustomRuleEdge: React.FC<EdgeProps> = ({
   id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition,
-  style = {}, markerEnd, data, selected, label: propLabel
+  style = {}, markerEnd, data, selected
 }) => {
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition,
@@ -27,20 +28,27 @@ const CustomRuleEdge: React.FC<EdgeProps> = ({
     strokeWidth: selected || hasError || hasWarning ? 2.2 : (style?.strokeWidth || 1.7),
   };
 
-  let displayLabel: React.ReactNode = null;
+  let displayLabelContent: React.ReactNode | null = null;
+  let showLabel = false;
 
   if (data?.isAggregated && typeof data.aggregatedCount === 'number' && data.aggregatedCount > 1) {
-    displayLabel = `(${data.aggregatedCount}) Правил`;
+    displayLabelContent = `(${data.aggregatedCount}) Правил`;
+    showLabel = true;
   } else if (hasError) {
-    displayLabel = edgeIssues.find(i => i.severity === 'error')?.message.substring(0, 30) || "Ошибка правила"; 
+    displayLabelContent = edgeIssues.find(i => i.severity === 'error')?.message.substring(0, 30) || "Ошибка правила"; 
+    showLabel = true;
   } else if (hasWarning) {
-    displayLabel = edgeIssues.find(i => i.severity === 'warning')?.message.substring(0, 30) || "Предупреждение";
-  } else if (data?.ruleApplied && typeof data.ruleApplied === 'string' && data.ruleApplied.trim()) {
-    const ruleText = data.ruleApplied;
-    displayLabel = ruleText.length > 30 ? `${ruleText.substring(0, 27)}...` : ruleText;
-  } else if (propLabel && typeof propLabel === 'string' && propLabel.trim()) {
-    displayLabel = propLabel;
-  }
+    displayLabelContent = edgeIssues.find(i => i.severity === 'warning')?.message.substring(0, 30) || "Предупреждение";
+    showLabel = true;
+  } else if (data?.ports && Array.isArray(data.ports) && data.ports.length > 0) {
+    const portDescriptions = (data.ports as PortProtocolEntry[]).map((p: PortProtocolEntry) => {
+      const portText = p.port ? p.port.toString() : 'any';
+      const protocolText = p.protocol ? p.protocol.toString() : 'any';
+      return `${portText}/${protocolText}`;
+    }).join(', ');
+    displayLabelContent = portDescriptions.length > 30 ? `${portDescriptions.substring(0, 27)}...` : portDescriptions;
+    showLabel = true;
+  } 
 
   const labelClasses = [
     styles.edgeLabelBase,
@@ -52,7 +60,7 @@ const CustomRuleEdge: React.FC<EdgeProps> = ({
   return (
     <>
       <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={pathStyle} />
-      {displayLabel && (
+      {showLabel && displayLabelContent && (
         <EdgeLabelRenderer>
           <div
             style={{
@@ -62,7 +70,7 @@ const CustomRuleEdge: React.FC<EdgeProps> = ({
             }}
             className={`nodrag nopan ${labelClasses}`}
           >
-            {displayLabel}
+            {displayLabelContent}
           </div>
         </EdgeLabelRenderer>
       )}
@@ -70,4 +78,4 @@ const CustomRuleEdge: React.FC<EdgeProps> = ({
   );
 };
 
-export default React.memo(CustomRuleEdge);
+export default memo(CustomRuleEdge);

@@ -1,53 +1,108 @@
-import { create, StoreApi, UseBoundStore } from 'zustand';
+import { create } from 'zustand';
 import {
   Node, Edge, Connection, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange, XYPosition,
 } from 'reactflow';
 import { isEqual } from 'lodash';
-import { PortProtocolEntry, IValidationError, CustomNodeData, NamespaceNodeData, PodGroupNodeData } from '../types';
-import { ValidationService } from '../services/ValidationService';
+import { v4 as uuidv4 } from 'uuid';
+
+import { 
+    PortProtocolEntry, 
+    IValidationError, 
+    CustomNodeData, 
+} from '../types'; 
+import { ValidationService } from '../services/ValidationService'; 
+import { 
+    EDGE_TYPE_CUSTOM_RULE, 
+    NODE_TYPE_NAMESPACE,
+    NODE_TYPE_PODGROUP,
+} from '../constants'; 
 
 type ElementId = string | null;
+
+const InvalidConnectionMessages = {
+  SELF_CONNECTION: "Узел не может быть соединен сам с собой.",
+  NS_TO_NS: "Неймспейс не может быть напрямую соединен с другим Неймспейсом этим способом.",
+  GENERAL_INVALID: "Соединение между этими элементами не разрешено."
+} as const;
+
 
 export interface AppState {
   selectedElementId: ElementId;
   nodes: Node<CustomNodeData>[];
   edges: Edge[];
   validationErrors: IValidationError[];
+  lastInvalidConnectionMessage: string | null;
 
   setSelectedElementId: (id: ElementId) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
-  onConnect: (connection: Connection | Edge) => void;
+  isValidConnection: (connection: Connection) => boolean;
+  onConnect: (connection: Connection) => void;
   addNode: (node: Node<CustomNodeData>) => void;
   deleteElements: (elementsToRemove: { nodes?: Node<CustomNodeData>[]; edges?: Edge[] }) => void;
-  updateNodeData: (nodeId: string, newData: Partial<CustomNodeData>) => void;
-  updateEdgeData: (edgeId: string, newData: Partial<Edge['data']>) => void;
-  updateNodeSizeAndPosition: (nodeId: string, newSize: { width: number; height: number }, newPosition?: XYPosition) => void;
+  updateNodeData: (nodeId: string, newDataOrUpdater: Partial<CustomNodeData> | ((currentData: CustomNodeData) => Partial<CustomNodeData>)) => void;
+  updateEdgeData: (edgeId: string, newDataOrUpdater: Partial<Edge['data']> | ((currentData: Edge['data']) => Partial<Edge['data'] | undefined>)) => void;
+  updateNodeSizeAndPosition: (nodeId: string, newSize: { width?: number; height?: number }, newPosition?: XYPosition) => void;
   runValidation: () => void;
+  clearLastInvalidConnectionMessage: () => void;
 }
 
 const validationService = new ValidationService();
+
+const initialState = {
+  selectedElementId: null,
+  nodes: [],
+  edges: [],
+  validationErrors: [],
+  lastInvalidConnectionMessage: null,
+};
 
 export const useAppStore = create<AppState>((set, get) => {
   const triggerValidation = () => {
     const { nodes, edges, validationErrors: currentErrors } = get();
     const newErrors = validationService.validateAllElements(nodes, edges);
-    if (!isEqual(currentErrors, newErrors)) set({ validationErrors: newErrors });
+    if (!isEqual(currentErrors, newErrors)) {
+      set({ validationErrors: newErrors });
+    }
   };
 
-  return {
-    // --- Состояние ---
-    selectedElementId: null,
-    nodes: [],
-    edges: [],
-    validationErrors: [],
+  const checkConnectionValidity = (connection: Connection): { isValid: boolean; message?: string, ruleAppliedMessage?: string } => {
+    const { nodes } = get();
+    const sourceNode = nodes.find(n => n.id === connection.source);
+    const targetNode = nodes.find(n => n.id === connection.target);
 
-    // --- Действия ---
+    if (!sourceNode || !targetNode) return { isValid: false, message: "Исходный или целевой узел не найден." };
+    if (connection.source === connection.target) return { isValid: false, message: InvalidConnectionMessages.SELF_CONNECTION };
+
+    const sourceLabel = sourceNode.data && ('label' in sourceNode.data) ? sourceNode.data.label : sourceNode.id.slice(-4);
+    const targetLabel = targetNode.data && ('label' in targetNode.data) ? targetNode.data.label : targetNode.id.slice(-4);
+
+    if (sourceNode.type === NODE_TYPE_PODGROUP && targetNode.type === NODE_TYPE_PODGROUP) {
+      return { isValid: true, ruleAppliedMessage: `Правило от ${sourceLabel} к ${targetLabel}` };
+    }
+    if (sourceNode.type === NODE_TYPE_PODGROUP && targetNode.type === NODE_TYPE_NAMESPACE) {
+      return { isValid: true, ruleAppliedMessage: `Egress от ${sourceLabel} к Namespace ${targetLabel}` };
+    }
+    if (sourceNode.type === NODE_TYPE_NAMESPACE && targetNode.type === NODE_TYPE_PODGROUP) {
+      return { isValid: true, ruleAppliedMessage: `Ingress к ${targetLabel} от Namespace ${sourceLabel}` };
+    }
+    if (sourceNode.type === NODE_TYPE_NAMESPACE && targetNode.type === NODE_TYPE_NAMESPACE) {
+      return { isValid: false, message: InvalidConnectionMessages.NS_TO_NS };
+    }
+    
+    return { isValid: false, message: InvalidConnectionMessages.GENERAL_INVALID };
+  };
+
+
+  return {
+    ...initialState,
+
     setSelectedElementId: (id) => set({ selectedElementId: id }),
+    clearLastInvalidConnectionMessage: () => set({ lastInvalidConnectionMessage: null }),
 
     onNodesChange: (changes) => {
       set(state => ({ nodes: applyNodeChanges(changes, state.nodes) }));
-      triggerValidation();
+      triggerValidation(); 
     },
 
     onEdgesChange: (changes) => {
@@ -55,27 +110,34 @@ export const useAppStore = create<AppState>((set, get) => {
       triggerValidation();
     },
 
-    onConnect: (connection) => {
-      const state = get();
-      if(!('source' in connection && 'target' in connection && connection.source && connection.target)) return;
-      const sourceNode = state.nodes.find(n=>n.id===connection.source); 
-      const targetNode = state.nodes.find(n=>n.id===connection.target);
-      if(!sourceNode || !targetNode) return;
+    isValidConnection: (connection) => {
+        return checkConnectionValidity(connection).isValid;
+    },
 
-      let isValidConnection = true; // TODO: Внедрить реальную логику валидации соединений
-      let ruleAppliedMessage: string | undefined = undefined;
+    onConnect: (connectionParams) => {
+      const validityCheck = checkConnectionValidity(connectionParams);
 
-      if(isValidConnection){
-        const newEdge: Edge = {
-          id: `edge_${connection.source.slice(-4)}${connection.sourceHandle||''}-${connection.target.slice(-4)}${connection.targetHandle||''}_${Date.now()}`,
-          source:connection.source, target:connection.target, 
-          sourceHandle:connection.sourceHandle, targetHandle:connection.targetHandle,
-          type: 'customRuleEdge', animated: true, 
-          data: { ruleApplied: ruleAppliedMessage, ports:[] as PortProtocolEntry[] },
-        };
-        set(s=>({edges:[...s.edges, newEdge]})); 
-        triggerValidation();
-      } else console.warn(`[Store] Connection disallowed.`);
+      if (!validityCheck.isValid) {
+        set({ lastInvalidConnectionMessage: validityCheck.message || InvalidConnectionMessages.GENERAL_INVALID });
+        setTimeout(() => get().clearLastInvalidConnectionMessage(), 3000); 
+        return;
+      }
+
+      const newEdge: Edge = {
+        id: uuidv4(), 
+        source: connectionParams.source!,
+        target: connectionParams.target!,
+        sourceHandle: connectionParams.sourceHandle, 
+        targetHandle: connectionParams.targetHandle,
+        type: EDGE_TYPE_CUSTOM_RULE, 
+        animated: true, 
+        data: { 
+          ruleApplied: validityCheck.ruleAppliedMessage, 
+          ports:[] as PortProtocolEntry[] 
+        },
+      };
+      set(state => ({ edges: [...state.edges, newEdge], lastInvalidConnectionMessage: null }));
+      triggerValidation();
     },
 
     addNode: (node) => { 
@@ -87,15 +149,15 @@ export const useAppStore = create<AppState>((set, get) => {
       set(state => {
         const nodeIdsToDelete = new Set(nodesToRemove.map(n => n.id));
         nodesToRemove.forEach(node => {
-          if (node.type === 'namespace') {
+          if (node.type === NODE_TYPE_NAMESPACE) {
             state.nodes.forEach(childNode => { 
               if (childNode.parentNode === node.id) nodeIdsToDelete.add(childNode.id); 
             });
           }
         });
 
-        const edgeIdsToDeleteFromInput = new Set(edgesToRemove.map(e => e.id));
-        const allEdgeIdsToDelete = new Set(edgeIdsToDeleteFromInput);
+        const edgeIdsFromInput = new Set(edgesToRemove.map(e => e.id));
+        const allEdgeIdsToDelete = new Set(edgeIdsFromInput);
         state.edges.forEach(edge => {
           if (nodeIdsToDelete.has(edge.source) || nodeIdsToDelete.has(edge.target)) {
             allEdgeIdsToDelete.add(edge.id);
@@ -104,20 +166,44 @@ export const useAppStore = create<AppState>((set, get) => {
 
         const newNodes = state.nodes.filter(n => !nodeIdsToDelete.has(n.id));
         const newEdges = state.edges.filter(e => !allEdgeIdsToDelete.has(e.id));
-        const newSelectedId = (state.selectedElementId && (nodeIdsToDelete.has(state.selectedElementId) || allEdgeIdsToDelete.has(state.selectedElementId)))
-          ? null : state.selectedElementId;
-        return { nodes: newNodes, edges: newEdges, selectedElementId: newSelectedId };
+        let newSelectedId = state.selectedElementId;
+        if (state.selectedElementId && (nodeIdsToDelete.has(state.selectedElementId) || allEdgeIdsToDelete.has(state.selectedElementId))) {
+          newSelectedId = null;
+        }
+        return { nodes: newNodes, edges: newEdges, selectedElementId: newSelectedId, lastInvalidConnectionMessage: null };
       }); 
       triggerValidation();
     },
 
-    updateNodeData: (nodeId, newData) => {
-      set(state => ({ nodes: state.nodes.map(n => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n) }));
+    updateNodeData: (nodeId, newDataOrUpdater) => {
+      set(state => ({
+        nodes: state.nodes.map(node => {
+          if (node.id === nodeId) {
+            const currentData = node.data as CustomNodeData; 
+            const updatedDataPart = typeof newDataOrUpdater === 'function'
+              ? newDataOrUpdater(currentData)
+              : newDataOrUpdater;
+            return { ...node, data: { ...currentData, ...updatedDataPart } };
+          }
+          return node;
+        }),
+      }));
       triggerValidation();
     },
 
-    updateEdgeData: (edgeId, newData) => {
-      set(state => ({ edges: state.edges.map(e => e.id === edgeId ? { ...e, data: { ...e.data, ...newData } } : e) }));
+    updateEdgeData: (edgeId, newDataOrUpdater) => {
+      set(state => ({
+        edges: state.edges.map(edge => {
+          if (edge.id === edgeId) {
+            const currentData = edge.data || {};
+            const updatedDataPart = typeof newDataOrUpdater === 'function'
+              ? newDataOrUpdater(currentData)
+              : newDataOrUpdater;
+            return { ...edge, data: { ...currentData, ...updatedDataPart } };
+          }
+          return edge;
+        }),
+      }));
       triggerValidation();
     },
 
@@ -125,18 +211,19 @@ export const useAppStore = create<AppState>((set, get) => {
       set(state => ({
         nodes: state.nodes.map(node => {
           if (node.id === nodeId) {
-            const updatedNode: Node<CustomNodeData> = { ...node, width: newSize.width, height: newSize.height, style: { ...node.style, width: newSize.width, height: newSize.height }};
+            const updatedNode: Node<CustomNodeData> = { ...node };
+            if (newSize.width !== undefined) updatedNode.width = newSize.width;
+            if (newSize.height !== undefined) updatedNode.height = newSize.height;
+            updatedNode.style = { ...node.style, width: newSize.width, height: newSize.height };
             if (newPosition) updatedNode.position = newPosition;
             return updatedNode;
           }
           return node;
         }),
       }));
-      triggerValidation();
+      triggerValidation(); 
     },
     
     runValidation: triggerValidation,
   };
 });
-
-export type { AppState as ApplicationState };

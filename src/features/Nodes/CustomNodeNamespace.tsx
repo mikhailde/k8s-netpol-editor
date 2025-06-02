@@ -1,45 +1,50 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { useAppStore } from '../../store/store';
 import { NamespaceNodeData } from '../../types';
+import { 
+    NS_HANDLE_TARGET_TOP_A, NS_HANDLE_TARGET_LEFT_B, 
+    NS_HANDLE_SOURCE_BOTTOM_A, NS_HANDLE_SOURCE_RIGHT_B 
+} from '../../constants';
 import styles from './CustomNodeNamespace.module.css';
 
-const CustomNodeNamespace: React.FC<NodeProps<NamespaceNodeData>> = ({ id, data, selected }) => {
-  const validationErrors = useAppStore((state) => state.validationErrors);
-  const nodeSpecificIssues = validationErrors.filter(error => error.elementId === id);
-  const hasError = nodeSpecificIssues.some(issue => issue.severity === 'error');
-  const hasWarning = !hasError && nodeSpecificIssues.some(issue => issue.severity === 'warning');
+const NodeStatus: React.FC<{ hasError: boolean; hasWarning: boolean }> = memo(({ hasError, hasWarning }) => {
+  if (hasError) return <div className={`${styles.statusContainer} ${styles.errorText}`}>Ошибка!</div>;
+  if (hasWarning) return <div className={`${styles.statusContainer} ${styles.warningText}`}>Предупреждение</div>;
+  return null;
+});
+NodeStatus.displayName = 'NodeStatus';
 
-  const nodeBaseClasses = [
+const CustomNodeNamespace: React.FC<NodeProps<NamespaceNodeData>> = ({ id, data, selected }) => {
+  const allValidationErrors = useAppStore(state => state.validationErrors);
+
+  const { hasError, hasWarning } = useMemo(() => {
+    const issuesForNode = allValidationErrors.filter(error => error.elementId === id);
+    const err = issuesForNode.some(issue => issue.severity === 'error');
+    const warn = !err && issuesForNode.some(issue => issue.severity === 'warning');
+    return { hasError: err, hasWarning: warn };
+  }, [allValidationErrors, id]);
+
+  const nodeClasses = [
     styles.nodeBase,
     selected ? styles.selectedState : '',
     hasError ? styles.errorState : '',
-    hasWarning && !hasError ? styles.warningState : '',
+    hasWarning ? styles.warningState : '',
   ].filter(Boolean).join(' ');
 
   const showHintText = !data.hasChildren && !hasError && !hasWarning; 
 
   return (
-    <div className={nodeBaseClasses}> 
-      <Handle type="target" position={Position.Top} id="ns-target-a" />
-      <Handle type="target" position={Position.Left} id="ns-target-b" />
-      
-      <div className={styles.nodeLabel}>{data?.label || 'Неймспейс'}</div>
-      
-      {showHintText && 
-        <div className={styles.hintText}>(Перетащите Группу Подов сюда)</div>
-      }
-      
-      {(!showHintText && (hasError || hasWarning)) && (
-        <div className={styles.statusContainer}>
-          {hasError && <div className={styles.errorText}>Ошибка!</div>}
-          {hasWarning && !hasError && <div className={styles.warningText}>Предупреждение</div>}
-        </div>
-      )}
-
-      <Handle type="source" position={Position.Bottom} id="ns-source-a" />
-      <Handle type="source" position={Position.Right} id="ns-source-b" />
+    <div className={nodeClasses} data-testid={`rf__node-${id}`}> 
+      <Handle type="target" position={Position.Top} id={NS_HANDLE_TARGET_TOP_A} />
+      <Handle type="target" position={Position.Left} id={NS_HANDLE_TARGET_LEFT_B} />
+      <div className={styles.nodeLabel}>{data?.label || `Неймспейс (${id.slice(-4)})`}</div>
+      {showHintText && <div className={styles.hintText}>(Перетащите Группу Подов сюда)</div>}
+      {!showHintText && (hasError || hasWarning) && <NodeStatus hasError={hasError} hasWarning={hasWarning} />}
+      <Handle type="source" position={Position.Bottom} id={NS_HANDLE_SOURCE_BOTTOM_A} />
+      <Handle type="source" position={Position.Right} id={NS_HANDLE_SOURCE_RIGHT_B} />
     </div>
   );
 };
-export default React.memo(CustomNodeNamespace);
+
+export default memo(CustomNodeNamespace);

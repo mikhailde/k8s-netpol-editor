@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { isEqual } from 'lodash';
-import { useAppStore, type AppState } from '../../store/store';
+import { useAppStore } from '../../store/store';
 import PodGroupPropertiesEditor from './PodGroupPropertiesEditor';
 import NamespacePropertiesEditor from './NamespacePropertiesEditor';
 import RulePortsEditor from './RulePortsEditor';
@@ -115,7 +115,7 @@ const InspectorView: React.FC = () => {
     const genIss = elIssues.filter(i => !i.fieldKey || !i.fieldKey.startsWith("ports"));
     const portIss = elIssues.filter(i => i.fieldKey?.startsWith("ports") && edgeToEdit && i.elementId === edgeToEdit.id);
     return (<> <h3 className={styles.inspectorHeader}>Свойства Правила</h3> <IssuesPanel issues={genIss} title="Проблемы:" />
-        <InfoBlock label="ID" value={e.id.slice(-10)} /> <InfoBlock label="Источник" value={e.source.slice(-10)} /> <InfoBlock label="Цель" value={e.target.slice(-10)} />
+        <InfoBlock label="ID" value={e.id.slice(-12)} /> <InfoBlock label="Источник" value={e.source.slice(-12)} /> <InfoBlock label="Цель" value={e.target.slice(-12)} />
         {isAgg && cnt && ids && (<div className={`${styles.section} ${styles.aggregatedRuleDetails}`}>
             <span className={styles.sectionTitle}>Агрегированное ({cnt})</span> <p>Выберите для редактирования портов:</p>
             <ul className={styles.aggregatedRuleList}>{ids.map(id => (<li key={id}><button type="button"

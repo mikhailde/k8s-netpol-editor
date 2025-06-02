@@ -21,6 +21,9 @@ const NamespacePropertiesEditor: React.FC<NamespacePropertiesEditorProps> = ({ n
   };
 
   const stopPropagation = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Комментарий: Останавливает "всплытие" события клавиатуры, чтобы предотвратить
+    // срабатывание глобальных обработчиков React Flow (например, удаление узла/ребра
+    // по Delete/Backspace, перемещение узлов стрелками), когда фокус находится внутри этого инпута.
     e.stopPropagation();
   };
 

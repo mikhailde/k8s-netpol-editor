@@ -1,7 +1,6 @@
 import { Node, Edge } from 'reactflow';
 import {
     IValidationError,
-    PodGroupNodeData,
     CustomNodeData,
     isPodGroupNodeData,
     PortProtocolEntry,
@@ -89,11 +88,6 @@ export class ValidationService {
                 if (!pgData.labels || Object.keys(pgData.labels).length === 0) {
                     errors.push(createValidationError(`Отсутствуют Labels у ${elName}.`, elId, "labels", "warning"));
                 } else {
-                    const labelKeys = Object.keys(pgData.labels);
-                    const uniqueLabelKeys = new Set(labelKeys);
-                    if (uniqueLabelKeys.size !== labelKeys.length) {
-                    }
-
                     for (const key in pgData.labels) {
                         const value = pgData.labels[key];
                         if (!key.trim()) {
