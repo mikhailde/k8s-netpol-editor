@@ -22,5 +22,6 @@ export const PG_HANDLE_SOURCE_BOTTOM_A = 'pg-source-a' as const;
 export const NAMESPACE_INITIAL_PADDING = 30 as const;
 export const NAMESPACE_MIN_WIDTH = 200 as const;
 export const NAMESPACE_MIN_HEIGHT = 120 as const;
+export const NAMESPACE_HEADER_RESERVED_HEIGHT = 40;
 export const PODGROUP_DEFAULT_WIDTH = 150 as const;
 export const PODGROUP_DEFAULT_HEIGHT = 40 as const;

@@ -36,14 +36,22 @@ const OutputView: React.FC = () => {
     const warnings: IValidationError[] = [];
     globalValidationErrors.forEach(issue => {
         const isRelatedToSelectedNode = issue.elementId === selectedElementId;
-        const isRelatedToEdgeOfSelectedNode = edges.some(e => e.id === issue.elementId && (e.source === selectedElementId || e.target === selectedElementId));
+        const selectedNode = nodes.find(n => n.id === selectedElementId);
+        let isRelatedToEdgeOfSelectedNode = false;
+        if (selectedNode) {
+            isRelatedToEdgeOfSelectedNode = edges.some(e => 
+                e.id === issue.elementId && (e.source === selectedElementId || e.target === selectedElementId)
+            );
+        }
+        
         if (isRelatedToSelectedNode || isRelatedToEdgeOfSelectedNode) {
             if (issue.severity === 'error') errors.push(issue);
             else if (issue.severity === 'warning') warnings.push(issue);
         }
     });
     return { relevantErrors: errors, relevantWarnings: warnings };
-  }, [selectedElementId, globalValidationErrors, edges]);
+  }, [selectedElementId, globalValidationErrors, nodes, edges]);
+
 
   const canGenerate = useMemo(() => {
     if (!selectedElementId) return false;
@@ -54,11 +62,17 @@ const OutputView: React.FC = () => {
 
   const handleGenerateYaml = useCallback(async (): Promise<void> => {
     if (!selectedElementId) {
-        setYamlOutput("# Пожалуйста, выберите PodGroup для генерации.");
+        setYamlOutput("# Пожалуйста, выберите PodGroup для генерации YAML.");
+        return;
+    }
+    const targetNodeInfo = nodes.find(n => n.id === selectedElementId);
+    if (!targetNodeInfo || targetNodeInfo.type !== 'podGroup') {
+        setYamlOutput("# Выбранный элемент не является PodGroup. YAML генерируется только для PodGroup.");
         return;
     }
     if (!canGenerate) {
-        setYamlOutput(`# Генерация YAML невозможна из-за критических ошибок.\n# Проверьте панель "Свойства элемента" для деталей.`);
+        const errorMessages = relevantErrors.map(e => `# - ${e.message} (Элемент: ${e.elementId || 'N/A'}${e.fieldKey ? `, Поле: ${e.fieldKey}` : ''})`).join('\n');
+        setYamlOutput(`# Генерация YAML невозможна из-за критических ошибок:\n${errorMessages}`);
         return;
     }
 
@@ -82,25 +96,43 @@ const OutputView: React.FC = () => {
     setYamlOutput(generatedYaml);
     setIsGenerating(false);
     setCopied(false);
-  }, [selectedElementId, canGenerate, relevantWarnings, yamlService, nodes, edges]);
+  }, [selectedElementId, canGenerate, relevantErrors, relevantWarnings, yamlService, nodes, edges]);
 
-  const currentOutputContent = useMemo(() => {
+
+  const isDisplayingActualYaml = useMemo(() => {
+  if (!yamlOutput || isGenerating) return false;
+
+  const nonYamlPlaceholderMessages = [
+    "# Пожалуйста, выберите PodGroup для генерации YAML.",
+    "# Выбранный элемент не является PodGroup. YAML генерируется только для PodGroup.",
+  ];
+
+  const trimmedYamlOutput = yamlOutput.trim();
+
+  if (nonYamlPlaceholderMessages.some(msg => trimmedYamlOutput === msg.trim())) {
+    return false;
+  }
+
+  return true;
+}, [yamlOutput, isGenerating]);
+
+  const contentForSyntaxHighlighter = useMemo(() => {
     if (yamlOutput) return yamlOutput;
-    if (!selectedElementId) return "Выберите PodGroup на холсте и нажмите \"Сгенерировать YAML\", чтобы увидеть результат здесь.";
-    if (!nodes.find(n => n.id === selectedElementId && n.type === 'podGroup')) return "Выбранный элемент не является PodGroup. YAML генерируется только для PodGroup.";
-    if (relevantErrors.length > 0) return `# Генерация YAML невозможна из-за критических ошибок.\n# Проверьте панель "Свойства элемента" для деталей.\n\nОшибки:\n${relevantErrors.map(e => `# - ${e.message} (Элемент: ${e.elementId || 'N/A'}${e.fieldKey ? `, Поле: ${e.fieldKey}` : ''})`).join('\n')}`;
-    return "Нажмите \"Сгенерировать YAML\".";
-  }, [yamlOutput, selectedElementId, nodes, relevantErrors]);
-
-  const isActualYaml: boolean = useMemo(() => {
-    return !!(yamlOutput && 
-              !yamlOutput.startsWith("# Пожалуйста, выберите") && 
-              !yamlOutput.startsWith("# Генерация YAML невозможна") && 
-              !yamlOutput.startsWith("# Выбранный элемент не является"));
+    return "";
   }, [yamlOutput]);
+  
+  const customPlaceholderMessage = useMemo(() => {
+    if (yamlOutput) return null;
+
+    if (!selectedElementId) return "Выберите PodGroup на холсте и нажмите \"Сгенерировать YAML\", чтобы увидеть результат здесь.";
+    const targetNode = nodes.find(n => n.id === selectedElementId);
+    if (!targetNode || targetNode.type !== 'podGroup') return "Выбранный элемент не является PodGroup. YAML генерируется только для PodGroup.";
+    return "Нажмите \"Сгенерировать YAML\", чтобы просмотреть результат.";
+  }, [yamlOutput, selectedElementId, nodes]);
+
 
   const handleCopyToClipboard = useCallback(() => {
-    if (yamlOutput && isActualYaml) {
+    if (yamlOutput && isDisplayingActualYaml) {
       navigator.clipboard.writeText(yamlOutput)
         .then(() => {
           setCopied(true);
@@ -108,10 +140,10 @@ const OutputView: React.FC = () => {
         })
         .catch(err => console.error('Ошибка копирования YAML:', err));
     }
-  }, [yamlOutput, isActualYaml]);
+  }, [yamlOutput, isDisplayingActualYaml]);
 
   const handleDownloadYaml = useCallback(() => {
-    if (yamlOutput && isActualYaml) {
+    if (yamlOutput && isDisplayingActualYaml) {
       const blob = new Blob([yamlOutput], { type: 'application/x-yaml;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -137,12 +169,12 @@ const OutputView: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
-  }, [yamlOutput, isActualYaml, selectedElementId, nodes]);
+  }, [yamlOutput, isDisplayingActualYaml, selectedElementId, nodes]);
 
 
   const isGenerateButtonDisabled = isGenerating || !selectedElementId || !nodes.find(n => n.id === selectedElementId && n.type === 'podGroup');
   const generateButtonText = isGenerating ? 'Генерация...' : (canGenerate ? 'Сгенерировать YAML' : 'Проверьте ошибки');
-  const isActionButtonsDisabled = !yamlOutput || !isActualYaml || isGenerating;
+  const isActionButtonsDisabled = !yamlOutput || !isDisplayingActualYaml || isGenerating;
 
   return (
     <div className={`output-view-root ${styles.outputViewBase}`}>
@@ -161,18 +193,17 @@ const OutputView: React.FC = () => {
           className={styles.downloadButton}
           disabled={isActionButtonsDisabled}
           title="Скачать сгенерированный YAML файл"
-          aria-label="Скачать сгенерированный YAML файл"
         >
           Скачать .yaml
         </button>
       </div>
 
       <div 
-        className={`${styles.outputPreWrapper} ${!isActualYaml ? styles.placeholderActive : ''}`}
+        className={`${styles.outputPreWrapper} ${isDisplayingActualYaml || (yamlOutput && yamlOutput.startsWith("#")) ? styles.hasContent : ''}`}
         aria-live="polite"
         aria-atomic="true"
       >
-        {isActualYaml && (
+        {isDisplayingActualYaml && yamlOutput && (
            <button 
              onClick={handleCopyToClipboard} 
              className={styles.copyButtonAbsolute} 
@@ -183,34 +214,39 @@ const OutputView: React.FC = () => {
            </button>
         )}
 
-        <SyntaxHighlighter
-          language="yaml"
-          style={atomDark}
-          showLineNumbers={isActualYaml}
-          wrapLines={true}
-          lineNumberStyle={{ opacity: 0.5 }}
-          customStyle={{ 
-              margin: 0, 
-              padding: 'calc(var(--spacing-unit) * 2)',
-              backgroundColor: !isActualYaml ? 'var(--color-background-panel)' : '#2d2d2d'
-          }}
-          codeTagProps={{ 
-            style: {
-              fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace",
-              fontSize: "0.85em",
-              lineHeight: "1.5",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-all",
-              color: !isActualYaml ? 'var(--color-text-placeholder)' : undefined
-            }
-          }}
-        >
-          {currentOutputContent}
-        </SyntaxHighlighter>
+        {customPlaceholderMessage && (
+          <div className={styles.outputPlaceholderContent}>
+            <p>{customPlaceholderMessage}</p>
+          </div>
+        )}
+        
+        {contentForSyntaxHighlighter && !customPlaceholderMessage && (
+          <SyntaxHighlighter
+            language="yaml"
+            style={atomDark}
+            showLineNumbers={isDisplayingActualYaml}
+            wrapLines={true}
+            lineNumberStyle={{ opacity: 0.5, userSelect: 'none' }}
+            customStyle={{ 
+                margin: 0, 
+                padding: 'calc(var(--spacing-unit) * 1.5) calc(var(--spacing-unit) * 2)',
+            }}
+            codeTagProps={{ 
+              style: {
+                fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace",
+                fontSize: "0.9em",
+                lineHeight: "1.6",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-all",
+              }
+            }}
+          >
+            {contentForSyntaxHighlighter}
+          </SyntaxHighlighter>
+        )}
       </div>
     </div>
   );
 };
 
 export default OutputView;
-

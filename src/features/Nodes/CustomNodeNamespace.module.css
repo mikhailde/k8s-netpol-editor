@@ -1,8 +1,8 @@
 .nodeBase {
   width: 100%; height: 100%; box-sizing: border-box; position: relative;
-  border: 2px solid var(--color-border-namespace, #91d5ff);
+  border: 1px solid var(--color-border-namespace, #91d5ff); 
+  box-shadow: var(--shadow-node-default, 0 1px 3px rgba(0, 0, 0, 0.06));
   border-radius: 8px; 
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
   display: flex; flex-direction: column; align-items: center; justify-content: space-between;
   padding: var(--spacing-unit, 8px);
   color: var(--color-text-namespace, #004a8c);
@@ -26,8 +26,9 @@
 .nodeLabel {
   font-weight: 600; font-size: 1.05em;
   margin-top: calc(var(--spacing-unit, 8px) * 0.5);
-  margin-bottom: var(--spacing-unit, 8px);
+  margin-bottom: calc(var(--spacing-unit, 8px) * 1.5);
   flex-shrink: 0;
+  padding: calc(var(--spacing-unit) * 0.5) var(--spacing-unit);
 }
 .hintText {
   color: var(--color-text-namespace-hint, #5089b3); font-size: 0.8em; font-style: italic;
@@ -42,7 +43,8 @@
 /* --- Состояния узла (применяются к .nodeBase) --- */
 .selectedState {
   border-color: var(--color-accent, #007AFF) !important;
-  box-shadow: 0 0 0 2px var(--color-accent, #007AFF), 0 0 8px rgba(0, 122, 255, 0.5) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-semitransparent, rgba(0, 122, 255, 0.3)), 
+              0 3px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 .errorState::before { background-color: var(--color-background-namespace-error, #ffebee) !important; }

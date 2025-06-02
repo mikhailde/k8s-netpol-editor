@@ -109,8 +109,8 @@ const Palette: React.FC = () => {
   }, [handleAddNodeViaKeyboard]);
 
   return (
-    <aside className={styles.palettePanel} aria-label="Палитра элементов">
-      <div className={styles.description}>Перетащите или выберите и нажмите Enter/Пробел:</div>
+    <aside className={styles.palettePanel} aria-label="Палитра элементов">   
+      <div className={styles.description}>Перетащите или кликните для добавления:</div>
       <DraggableNode 
         nodeType={NODE_TYPE_NAMESPACE}
         label="Неймспейс"

@@ -17,76 +17,73 @@ interface PodGroupPropertiesEditorProps {
 
 const PodGroupPropertiesEditor: React.FC<PodGroupPropertiesEditorProps> = ({ node, nodeIssues }) => {
   const updateNodeData = useAppStore(state => state.updateNodeData);
-  const { id, data } = node;
-  const { metadata, policyConfig, labels } = data;
 
   const [newLabelKey, setNewLabelKey] = useState('');
   const [newLabelValue, setNewLabelValue] = useState('');
   const [editingLabelKey, setEditingLabelKey] = useState<string | null>(null);
   const [editLabelValue, setEditLabelValue] = useState('');
-  const [uiAddLabelError, setUiAddLabelError] = useState<string | null>(null);
+  const [uiAddLabelKeyError, setUiAddLabelKeyError] = useState<string | null>(null);
 
   useEffect(() => {
     setNewLabelKey('');
     setNewLabelValue('');
     setEditingLabelKey(null);
     setEditLabelValue('');
-    setUiAddLabelError(null);
-  }, [id]);
+    setUiAddLabelKeyError(null);
+  }, [node.id]);
 
   const stopPropagation = useCallback((e: React.SyntheticEvent) => {
-    // Комментарий: Останавливает "всплытие" события (в основном клавиатурных),
-    // чтобы предотвратить срабатывание глобальных обработчиков React Flow
-    // (например, удаление, навигация), когда пользователь взаимодействует с полями формы.
     e.stopPropagation();
   }, []);
 
   const handleMetadataChange = useCallback((field: keyof PodGroupNodeData['metadata'], value: string) => {
-    const newMetadata = { ...metadata, [field]: value };
-    const newLabel = field === 'name' ? value : data.label;
-    updateNodeData(id, { metadata: newMetadata, label: newLabel });
-  }, [id, metadata, data.label, updateNodeData]);
+    const newMetadata = { ...node.data.metadata, [field]: value };
+    const newLabel = field === 'name' ? value : node.data.label;
+    updateNodeData(node.id, { metadata: newMetadata, label: newLabel });
+  }, [node, updateNodeData]);
 
   const handlePolicyConfigChange = useCallback((field: keyof PodGroupNodeData['policyConfig']) => {
-    updateNodeData(id, { policyConfig: { ...policyConfig, [field]: !policyConfig[field] } });
-  }, [id, policyConfig, updateNodeData]);
+    updateNodeData(node.id, { 
+      policyConfig: { ...node.data.policyConfig, [field]: !node.data.policyConfig[field] } 
+    });
+  }, [node, updateNodeData]);
 
   const handleAddLabel = useCallback(() => {
     const trimmedKey = newLabelKey.trim();
     if (!trimmedKey) {
-      setUiAddLabelError('Ключ метки не может быть пустым.');
+      setUiAddLabelKeyError('Ключ метки не может быть пустым.');
       return;
     }
-    if (labels[trimmedKey] !== undefined) {
-      setUiAddLabelError(`Метка с ключом "${trimmedKey}" уже существует.`);
+    if (node.data.labels[trimmedKey] !== undefined) {
+      setUiAddLabelKeyError(`Метка с ключом "${trimmedKey}" уже существует.`);
       return;
     }
-    setUiAddLabelError(null);
-    updateNodeData(id, { labels: { ...labels, [trimmedKey]: newLabelValue.trim() } });
+    setUiAddLabelKeyError(null);
+    updateNodeData(node.id, { labels: { ...node.data.labels, [trimmedKey]: newLabelValue.trim() } });
     setNewLabelKey('');
     setNewLabelValue('');
-  }, [id, labels, newLabelKey, newLabelValue, updateNodeData]);
+  }, [node, newLabelKey, newLabelValue, updateNodeData]);
 
   const handleDeleteLabel = useCallback((keyToDelete: string) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { [keyToDelete]: _, ...remainingLabels } = labels;
-    updateNodeData(id, { labels: remainingLabels });
+    const { [keyToDelete]: _, ...remainingLabels } = node.data.labels;
+    updateNodeData(node.id, { labels: remainingLabels });
     if (editingLabelKey === keyToDelete) { 
       setEditingLabelKey(null);
     }
-  }, [id, labels, editingLabelKey, updateNodeData]);
+  }, [node, editingLabelKey, updateNodeData]);
 
   const startEditLabel = useCallback((key: string, value: string) => {
     setEditingLabelKey(key);
     setEditLabelValue(value);
-    setUiAddLabelError(null);
+    setUiAddLabelKeyError(null);
   }, []);
 
   const handleSaveEditedLabel = useCallback(() => {
     if (!editingLabelKey) return;
-    updateNodeData(id, { labels: { ...labels, [editingLabelKey]: editLabelValue.trim() } });
+    updateNodeData(node.id, { labels: { ...node.data.labels, [editingLabelKey]: editLabelValue.trim() } });
     setEditingLabelKey(null);
-  }, [id, labels, editingLabelKey, editLabelValue, updateNodeData]);
+  }, [node, editingLabelKey, editLabelValue, updateNodeData]);
 
   const cancelEditLabel = useCallback(() => {
     setEditingLabelKey(null);
@@ -101,43 +98,45 @@ const PodGroupPropertiesEditor: React.FC<PodGroupPropertiesEditorProps> = ({ nod
   return (
     <>
       <div className={styles.section}>
-        <label htmlFor={`pg-name-${id}`} className={styles.formLabel}>Name (DNS-1123):</label>
+        <label htmlFor={`pg-name-${node.id}`} className={styles.formLabel}>Name (DNS-1123):</label>
         <input
-          id={`pg-name-${id}`}
+          id={`pg-name-${node.id}`}
           type="text"
-          value={metadata.name || ''}
+          value={node.data.metadata.name || ''}
           onChange={(e) => handleMetadataChange('name', e.target.value)}
           onKeyDown={stopPropagation}
           className={`${styles.formInput} ${nameError ? styles.formInputError : ''}`}
           placeholder="Имя группы подов"
-          aria-describedby={nameError ? `pg-name-error-${id}` : undefined}
+          aria-describedby={nameError ? `pg-name-error-${node.id}` : undefined}
         />
-        {nameError && <span id={`pg-name-error-${id}`} className={styles.errorMessage}>{nameError}</span>}
+        {nameError && <span id={`pg-name-error-${node.id}`} className={styles.errorMessage}>{nameError}</span>}
       </div>
 
       <div className={styles.section}>
-        <label htmlFor={`pg-ns-${id}`} className={styles.formLabel}>Namespace (DNS-1123):</label>
+        <label htmlFor={`pg-ns-${node.id}`} className={styles.formLabel}>Namespace (DNS-1123):</label>
         <input
-          id={`pg-ns-${id}`}
+          id={`pg-ns-${node.id}`}
           type="text"
-          value={metadata.namespace || ''}
+          value={node.data.metadata.namespace || ''}
           onChange={(e) => handleMetadataChange('namespace', e.target.value)}
           onKeyDown={stopPropagation}
           className={`${styles.formInput} ${namespaceError ? styles.formInputError : ''}`}
           placeholder="Неймспейс группы подов"
-          aria-describedby={namespaceError ? `pg-ns-error-${id}` : undefined}
+          aria-describedby={namespaceError ? `pg-ns-error-${node.id}` : undefined}
         />
-        {namespaceError && <span id={`pg-ns-error-${id}`} className={styles.errorMessage}>{namespaceError}</span>}
+        {namespaceError && <span id={`pg-ns-error-${node.id}`} className={styles.errorMessage}>{namespaceError}</span>}
       </div>
+
+      <hr className={styles.divider} />
 
       <div className={styles.section}>
         <span className={styles.sectionTitle}>Конфигурация Политик</span>
         {(['defaultDenyIngress', 'defaultDenyEgress'] as const).map(key => (
-          <label key={key} htmlFor={`${key}-${id}`} className={styles.formCheckboxWrapper}>
+          <label key={key} htmlFor={`${key}-${node.id}`} className={styles.formCheckboxWrapper}>
             <input
               type="checkbox"
-              id={`${key}-${id}`}
-              checked={policyConfig[key]}
+              id={`${key}-${node.id}`}
+              checked={node.data.policyConfig[key]}
               onChange={() => handlePolicyConfigChange(key)}
               onKeyDown={stopPropagation}
               className={styles.formCheckbox}
@@ -149,13 +148,15 @@ const PodGroupPropertiesEditor: React.FC<PodGroupPropertiesEditorProps> = ({ nod
         ))}
       </div>
 
+      <hr className={styles.divider} />
+
       <div className={styles.section}>
         <span className={styles.sectionTitle}>Лейблы (Селекторы)</span>
         {displayLabelsError && <span className={`${styles.errorMessage} ${styles.section}`}>{displayLabelsError}</span>}
         
-        {Object.keys(labels).length > 0 || editingLabelKey ? (
+        {Object.keys(node.data.labels).length > 0 || editingLabelKey ? (
           <div className={styles.labelsListContainer}>
-            {Object.entries(labels).map(([key, value]) => (
+            {Object.entries(node.data.labels).map(([key, value]) => (
               <div key={key} className={styles.labelEntry}>
                 {editingLabelKey === key ? (
                   <>
@@ -192,31 +193,34 @@ const PodGroupPropertiesEditor: React.FC<PodGroupPropertiesEditorProps> = ({ nod
         {!editingLabelKey && (
           <div className={styles.addLabelForm}>
             <span className={`${styles.sectionTitle} ${styles.sectionTitleSmallerMargin}`}>Добавить новый лейбл:</span>
-            {uiAddLabelError && <span className={styles.errorMessage}>{uiAddLabelError}</span>}
-            <div>
+            <div className={styles.addLabelFormRow}>
+              <div className={styles.inputWrapperWithError}>
+                <input
+                  type="text"
+                  placeholder="Ключ метки"
+                  value={newLabelKey}
+                  onChange={(e) => { setNewLabelKey(e.target.value); setUiAddLabelKeyError(null); }}
+                  onKeyDown={stopPropagation}
+                  className={`${styles.formInput} ${uiAddLabelKeyError ? styles.formInputError : ''}`}
+                  aria-label="Ключ новой метки"
+                  aria-describedby={uiAddLabelKeyError ? `new-label-key-error-${node.id}` : undefined}
+                />
+                {uiAddLabelKeyError && <span id={`new-label-key-error-${node.id}`} className={styles.errorMessage}>{uiAddLabelKeyError}</span>}
+              </div>
               <input
                 type="text"
-                placeholder="Ключ метки"
-                value={newLabelKey}
-                onChange={(e) => { setNewLabelKey(e.target.value); setUiAddLabelError(null); }}
-                onKeyDown={stopPropagation}
-                className={`${styles.formInput} ${uiAddLabelError ? styles.formInputError : ''}`}
-                aria-label="Ключ новой метки"
-              />
-              <input
-                type="text"
-                placeholder="Значение метки (опционально)"
+                placeholder="Значение метки"
                 value={newLabelValue}
                 onChange={(e) => setNewLabelValue(e.target.value)}
                 onKeyDown={(e) => {
                     stopPropagation(e);
-                    if(e.key === 'Enter') handleAddLabel();
+                    if(e.key === 'Enter' && !uiAddLabelKeyError) handleAddLabel();
                 }}
                 className={styles.formInput}
                 aria-label="Значение новой метки"
               />
+              <button onClick={handleAddLabel} className={`${styles.buttonBase} ${styles.buttonSuccess}`}>Добавить</button>
             </div>
-            <button onClick={handleAddLabel} className={`${styles.buttonBase} ${styles.buttonSuccess} ${styles.buttonBlock}`}>Добавить лейбл</button>
           </div>
         )}
       </div>
