@@ -1,12 +1,13 @@
 import { render, screen, act, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import InspectorView from '../InspectorView';
-import { useAppStore, AppState, AppStoreType } from '../../../store/store';
+import { useAppStore, AppState } from '../../../store/store';
 import { Node } from 'reactflow';
 import { NamespaceNodeData, PodGroupNodeData, CustomNodeData, PortProtocolEntry } from '../../../types';
 import styles from '../InspectorView.module.css';
 import { IValidationError } from '../../../types';
 
+type AppStoreType = typeof useAppStore;
 interface TestableAppStore extends AppStoreType {
   setState: (
     partial: AppState | Partial<AppState> | ((state: AppState) => AppState | Partial<AppState>),
